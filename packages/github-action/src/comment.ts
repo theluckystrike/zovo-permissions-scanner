@@ -1,114 +1,178 @@
 import type { ScanReport, Risk, Severity } from '@zovo/permissions-scanner';
+import type { ReportDiff, PermissionChange } from './diff';
 
-const COMMENT_MARKER = '<!-- zovo-permissions-scanner -->';
+// ── Constants ──
 
-const SEVERITY_ICONS: Record<Severity, string> = {
-  critical: '\uD83D\uDD34 Critical',
-  high: '\uD83D\uDFE0 High',
-  medium: '\uD83D\uDFE1 Medium',
-  low: '\u26AA Low',
+const MARKER = '<!-- zovo-permissions-scanner -->';
+
+const GRADE_LABELS: Record<string, string> = {
+  'A+': 'Fort Knox',
+  A: 'Solid',
+  B: 'Mostly Harmless',
+  C: 'Eyebrow Raiser',
+  D: 'Red Flags',
+  F: 'Run.',
 };
 
-const GRADE_ICONS: Record<string, string> = {
+const GRADE_EMOJIS: Record<string, string> = {
   'A+': '\uD83D\uDFE2',
   A: '\uD83D\uDFE2',
   B: '\uD83D\uDFE1',
   C: '\uD83D\uDFE0',
   D: '\uD83D\uDD34',
-  F: '\uD83D\uDD34',
+  F: '\u26AB',
 };
 
-/**
- * Format a ScanReport as a GitHub PR comment in markdown.
- */
-export function formatComment(report: ScanReport): string {
-  const gradeIcon = GRADE_ICONS[report.grade] ?? '\u26AA';
-  const extensionLabel =
-    report.name !== 'Unknown Extension'
-      ? `${report.name} v${report.version}`
-      : `v${report.version}`;
+const SEVERITY_ICONS: Record<string, string> = {
+  critical: '\uD83D\uDD34',
+  high: '\uD83D\uDD34',
+  medium: '\uD83D\uDFE1',
+  low: '\uD83D\uDFE2',
+};
 
+const STATUS_ICONS: Record<string, string> = {
+  added: '\uD83C\uDD95 Added',
+  removed: '\uD83D\uDDD1\uFE0F Removed',
+  unchanged: '\u2705 Unchanged',
+};
+
+const FOOTER =
+  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.dev">Zovo Permissions Scanner</a> \u00B7 <a href="https://github.com/theluckystrike/zovo-permissions-scanner">Add to your repo</a></sub>';
+
+const FOOTER_SIMPLE =
+  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.dev">Zovo Permissions Scanner</a></sub>';
+
+// ── Helpers ──
+
+function severityIcon(severity: Severity | null): string {
+  if (severity === null) return '\u26AA';
+  return SEVERITY_ICONS[severity] ?? '\u26AA';
+}
+
+function scoreDeltaIcon(delta: number): string {
+  if (delta > 0) return '\u2B06\uFE0F';
+  if (delta < 0) return '\u2B07\uFE0F';
+  return '\u27A1\uFE0F';
+}
+
+function gradeDisplay(grade: string): string {
+  const label = GRADE_LABELS[grade] ?? '';
+  const emoji = GRADE_EMOJIS[grade] ?? '';
+  return `${grade} (${label} ${emoji})`;
+}
+
+function capitalize(value: string | null): string {
+  if (!value) return 'Unknown';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+// ── Formatters ──
+
+function formatNoChanges(after: ScanReport): string {
   const lines: string[] = [
-    COMMENT_MARKER,
+    MARKER,
+    `## \uD83D\uDD0D Zovo Permissions Scanner`,
     '',
-    '## \uD83D\uDEE1\uFE0F Zovo Permissions Scanner',
+    `\u2705 No permission changes detected. Current score: **${after.score}/100 (${after.grade})**`,
     '',
-    '| | |',
-    '|---|---|',
-    `| **Score** | ${report.score}/100 |`,
-    `| **Grade** | ${report.grade} \u2014 ${report.label} ${gradeIcon} |`,
-    `| **Extension** | ${extensionLabel} |`,
-    '',
+    FOOTER_SIMPLE,
   ];
+  return lines.join('\n');
+}
 
-  // Risks section
-  if (report.risks.length > 0) {
-    lines.push('### \u26A0\uFE0F Risks Found', '');
-    lines.push('| Severity | Permission | Details |');
-    lines.push('|----------|------------|---------|');
+function formatWithChanges(after: ScanReport, diff: ReportDiff): string {
+  const lines: string[] = [MARKER, `## \uD83D\uDD0D Zovo Permissions Scanner`, ''];
 
-    // Sort risks: critical first, then high, medium, low
-    const severityOrder: Record<Severity, number> = {
-      critical: 0,
-      high: 1,
-      medium: 2,
-      low: 3,
-    };
-    const sorted = [...report.risks].sort(
-      (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
+  // Score line
+  if (diff.gradeBefore !== null) {
+    const scoreBefore = after.score - diff.scoreDelta;
+    const icon = scoreDeltaIcon(diff.scoreDelta);
+    const sign = diff.scoreDelta >= 0 ? '+' : '';
+    lines.push(
+      `### Score: ${scoreBefore}/100 \u2192 ${after.score}/100 (${icon} ${sign}${diff.scoreDelta} points)`,
     );
-
-    for (const risk of sorted) {
-      const icon = SEVERITY_ICONS[risk.severity];
-      lines.push(`| ${icon} | \`${risk.permission}\` | ${risk.reason} |`);
-    }
-
-    lines.push('');
   } else {
-    lines.push('### \u2705 No Risks Found', '');
-    lines.push('This extension uses no risky permissions. Nice!', '');
+    lines.push(`### Score: ${after.score}/100`);
   }
 
-  // Bonuses section
-  if (report.bonuses.length > 0) {
-    lines.push('### \u2705 Good Practices', '');
-    for (const bonus of report.bonuses) {
+  // Grade line
+  if (diff.gradeBefore !== null) {
+    lines.push(
+      `### Grade: ${diff.gradeBefore} \u2192 ${gradeDisplay(diff.gradeAfter)}`,
+    );
+  } else {
+    lines.push(`### Grade: ${gradeDisplay(diff.gradeAfter)}`);
+  }
+
+  lines.push('');
+
+  // Permission changes table
+  lines.push(`#### \u26A0\uFE0F Permission Changes Detected`);
+  lines.push('');
+  lines.push('| Permission | Status | Risk | Impact |');
+  lines.push('|-----------|--------|------|--------|');
+
+  for (const change of diff.permissionChanges) {
+    const status = STATUS_ICONS[change.status] ?? change.status;
+    const risk = severityIcon(change.severity) + ' ' + capitalize(change.severity);
+    const impact = change.status === 'unchanged' ? '\u2014' : change.reason;
+    lines.push(`| \`${change.permission}\` | ${status} | ${risk} | ${impact} |`);
+  }
+
+  lines.push('');
+
+  // New risks
+  if (diff.newRisks.length > 0) {
+    lines.push(`#### \uD83D\uDCCA New Risks`);
+    lines.push('');
+    for (const risk of diff.newRisks) {
+      lines.push(`- ${severityIcon(risk.severity)} **${risk.reason}**`);
+      if (risk.recommendation) {
+        lines.push(`- \uD83D\uDCA1 **Recommendation**: ${risk.recommendation}`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Positive signals (bonuses)
+  if (after.bonuses.length > 0) {
+    lines.push(`#### \u2705 Positive Signals`);
+    lines.push('');
+    for (const bonus of after.bonuses) {
       lines.push(`- ${bonus.reason}`);
     }
     lines.push('');
   }
 
-  // Footer
   lines.push('---');
-  lines.push(
-    '<sub>Scanned by <a href="https://scan.zovo.dev">Zovo Permissions Scanner</a> \u00B7 <a href="https://zovo.dev">zovo.dev</a></sub>'
-  );
+  lines.push('');
+  lines.push(FOOTER);
 
   return lines.join('\n');
 }
 
-/**
- * Find an existing Zovo Permissions Scanner comment on a PR.
- * Returns the comment ID if found, null otherwise.
- */
+// ── Public API ──
+
+export function formatComment(after: ScanReport, diff: ReportDiff | null): string {
+  if (diff === null || !diff.hasChanges) {
+    return formatNoChanges(after);
+  }
+  return formatWithChanges(after, diff);
+}
+
 export async function findExistingComment(
-  octokit: ReturnType<typeof import('@actions/github').getOctokit>,
+  octokit: any,
   owner: string,
   repo: string,
-  prNumber: number
+  prNumber: number,
 ): Promise<number | null> {
   const { data: comments } = await octokit.rest.issues.listComments({
     owner,
     repo,
     issue_number: prNumber,
-    per_page: 100,
   });
-
-  for (const comment of comments) {
-    if (comment.body?.includes(COMMENT_MARKER)) {
-      return comment.id;
-    }
-  }
-
-  return null;
+  const existing = comments.find((c: any) =>
+    c.body?.includes('<!-- zovo-permissions-scanner -->'),
+  );
+  return existing ? existing.id : null;
 }

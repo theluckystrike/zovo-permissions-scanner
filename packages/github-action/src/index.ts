@@ -1,108 +1,121 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { scanManifestFile } from './scanner-wrapper';
+import * as exec from '@actions/exec';
+import { scanManifest, validateManifest, ChromeManifest, ScanReport } from '@zovo/permissions-scanner';
+import * as fs from 'fs';
+
+import { findManifestPath } from './manifest-finder';
+import { diffReports, ReportDiff } from './diff';
 import { formatComment, findExistingComment } from './comment';
 
 async function run(): Promise<void> {
-  try {
-    // ── 1. Read inputs ──
-    const manifestPath = core.getInput('manifest-path');
-    const githubToken = core.getInput('github-token', { required: true });
-    const failBelow = parseInt(core.getInput('fail-below'), 10) || 0;
-    const shouldComment = core.getInput('comment') !== 'false';
+  // ── 1. Get inputs ──
+  const manifestPathInput = core.getInput('manifest-path');
+  const failBelow = Number(core.getInput('fail-below') || '0');
+  const shouldComment = core.getBooleanInput('comment');
+  const token = core.getInput('github-token');
 
-    core.info(`Scanning manifest at: ${manifestPath}`);
+  core.info('Zovo Permissions Scanner starting...');
 
-    // ── 2. Run the scanner ──
-    const report = scanManifestFile(manifestPath);
+  // ── 2. Find manifest ──
+  const manifestPath = findManifestPath(manifestPathInput || undefined);
+  core.info(`Found manifest at: ${manifestPath}`);
 
-    core.info(`Score: ${report.score}/100 | Grade: ${report.grade} — ${report.label}`);
-    core.info(`Risks found: ${report.risks.length}`);
+  // ── 3. Scan current (PR) manifest ──
+  const rawManifest = fs.readFileSync(manifestPath, 'utf-8');
+  const manifest: ChromeManifest = JSON.parse(rawManifest);
+  validateManifest(manifest);
+  const afterReport: ScanReport = scanManifest(manifest);
+  core.info(`Current scan complete — score: ${afterReport.score}, grade: ${afterReport.grade}`);
 
-    // ── 3. Set outputs ──
-    core.setOutput('score', report.score.toString());
-    core.setOutput('grade', report.grade);
-    core.setOutput('report', JSON.stringify(report));
+  // ── 4. Try to get base branch manifest for comparison ──
+  let beforeReport: ScanReport | null = null;
+  const isPullRequest = github.context.eventName === 'pull_request';
 
-    // ── 4. Post/update PR comment ──
-    if (shouldComment && github.context.payload.pull_request) {
-      const octokit = github.getOctokit(githubToken);
-      const { owner, repo } = github.context.repo;
-      const prNumber = github.context.payload.pull_request.number;
-
-      const commentBody = formatComment(report);
-
-      const existingCommentId = await findExistingComment(
-        octokit,
-        owner,
-        repo,
-        prNumber
-      );
-
-      if (existingCommentId) {
-        core.info(`Updating existing comment (ID: ${existingCommentId})`);
-        await octokit.rest.issues.updateComment({
-          owner,
-          repo,
-          comment_id: existingCommentId,
-          body: commentBody,
+  if (isPullRequest) {
+    const baseRef = github.context.payload.pull_request?.base?.ref;
+    if (baseRef) {
+      core.info(`Attempting to fetch base manifest from origin/${baseRef}:${manifestPath}`);
+      try {
+        let baseManifestRaw = '';
+        await exec.exec('git', ['show', `origin/${baseRef}:${manifestPath}`], {
+          listeners: {
+            stdout: (data: Buffer) => {
+              baseManifestRaw += data.toString();
+            },
+          },
+          silent: true,
         });
-      } else {
-        core.info('Posting new PR comment');
-        await octokit.rest.issues.createComment({
-          owner,
-          repo,
-          issue_number: prNumber,
-          body: commentBody,
-        });
+
+        const baseManifest: ChromeManifest = JSON.parse(baseManifestRaw);
+        validateManifest(baseManifest);
+        beforeReport = scanManifest(baseManifest);
+        core.info(`Base branch scan complete — score: ${beforeReport.score}, grade: ${beforeReport.grade}`);
+      } catch (err) {
+        core.info(`Could not retrieve base manifest (file may not exist on base branch): ${err}`);
+        beforeReport = null;
       }
-    } else if (shouldComment) {
-      core.info('Not a pull_request event — skipping PR comment');
-    }
-
-    // ── 5. Write job summary ──
-    const gradeEmoji =
-      report.grade === 'A+' || report.grade === 'A'
-        ? '\u2705'
-        : report.grade === 'B'
-          ? '\uD83D\uDFE1'
-          : report.grade === 'C'
-            ? '\uD83D\uDFE0'
-            : '\uD83D\uDD34';
-
-    await core.summary
-      .addHeading('\uD83D\uDEE1\uFE0F Zovo Permissions Scanner')
-      .addTable([
-        [
-          { data: 'Score', header: true },
-          { data: 'Grade', header: true },
-          { data: 'Risks', header: true },
-          { data: 'Bonuses', header: true },
-        ],
-        [
-          `${report.score}/100`,
-          `${gradeEmoji} ${report.grade} — ${report.label}`,
-          `${report.risks.length}`,
-          `${report.bonuses.length}`,
-        ],
-      ])
-      .addRaw(report.summary)
-      .write();
-
-    // ── 6. Fail if below threshold ──
-    if (failBelow > 0 && report.score < failBelow) {
-      core.setFailed(
-        `Score ${report.score}/100 is below the required threshold of ${failBelow}. ` +
-          `Grade: ${report.grade} — ${report.label}`
-      );
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message);
-    } else {
-      core.setFailed('An unexpected error occurred');
     }
   }
+
+  // ── 5. Generate diff ──
+  const diff: ReportDiff | null = diffReports(beforeReport, afterReport);
+  core.info(`Diff generated — score delta: ${diff?.scoreDelta ?? 0}`);
+
+  // ── 6. Set outputs ──
+  core.setOutput('score', afterReport.score);
+  core.setOutput('grade', afterReport.grade);
+  core.setOutput('score-delta', diff?.scoreDelta ?? 0);
+
+  // ── 7. Post PR comment (if enabled and is PR event) ──
+  if (shouldComment && isPullRequest && token) {
+    const octokit = github.getOctokit(token);
+    const { owner, repo } = github.context.repo;
+    const prNumber = github.context.payload.pull_request!.number;
+
+    const commentBody = formatComment(afterReport, diff);
+    const existingCommentId = await findExistingComment(octokit, owner, repo, prNumber);
+
+    if (existingCommentId) {
+      core.info(`Updating existing comment (ID: ${existingCommentId})`);
+      await octokit.rest.issues.updateComment({
+        owner,
+        repo,
+        comment_id: existingCommentId,
+        body: commentBody,
+      });
+    } else {
+      core.info('Creating new PR comment');
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: prNumber,
+        body: commentBody,
+      });
+    }
+  }
+
+  // ── 8. Write job summary ──
+  await core.summary
+    .addHeading('Zovo Permissions Scanner Results')
+    .addTable([
+      [
+        { data: 'Metric', header: true },
+        { data: 'Value', header: true },
+      ],
+      ['Score', String(afterReport.score)],
+      ['Grade', `${afterReport.grade} — ${afterReport.label}`],
+      ['Risks', String(afterReport.risks.length)],
+      ['Score Delta', String(diff?.scoreDelta ?? 'N/A')],
+    ])
+    .write();
+
+  // ── 9. Check threshold ──
+  if (failBelow > 0 && afterReport.score < failBelow) {
+    core.setFailed(`Zovo score ${afterReport.score} is below threshold ${failBelow}`);
+  }
+
+  core.info('Zovo Permissions Scanner complete.');
 }
 
-run();
+run().catch(core.setFailed);
