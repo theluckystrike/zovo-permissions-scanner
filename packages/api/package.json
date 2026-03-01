@@ -1,0 +1,24 @@
+{
+  "name": "@zovo/scan-api",
+  "version": "1.0.0",
+  "description": "REST API for Zovo Permissions Scanner",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc",
+    "deploy": "wrangler deploy",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zovo/permissions-scanner": "file:../core",
+    "hono": "^4.0.0",
+    "jszip": "^3.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "@cloudflare/workers-types": "^4.0.0",
+    "wrangler": "^3.0.0"
+  },
+  "license": "MIT"
+}
