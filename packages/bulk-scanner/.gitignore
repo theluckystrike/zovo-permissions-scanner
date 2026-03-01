@@ -1,3 +1,6 @@
-output/*.json
-output/*.csv
-!output/.gitkeep
+node_modules/
+dist/
+data/results/*.json
+data/results/*.md
+data/progress.json
+!data/results/.gitkeep

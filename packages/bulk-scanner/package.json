@@ -1,8 +1,11 @@
 {
   "name": "@zovo/bulk-scanner",
   "version": "1.0.0",
-  "description": "Bulk scan Chrome extensions for the Zovo Wall of Shame",
+  "description": "Bulk scan top Chrome extensions — Wall of Shame + Wall of Fame report generator",
   "main": "dist/index.js",
+  "bin": {
+    "zovo-bulk-scan": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "scan": "ts-node src/index.ts",
@@ -12,7 +15,8 @@
   "dependencies": {
     "@zovo/permissions-scanner": "file:../core",
     "commander": "^12.0.0",
-    "chalk": "^4.1.2"
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

@@ -1,197 +1,137 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as path from 'path';
-import { loadTopExtensions, loadFromFile, parseIds } from './id-sources';
-import { bulkScan } from './runner';
-import { exportToJson } from './exporters/json-exporter';
-import { exportToCsv } from './exporters/csv-exporter';
+import ora from 'ora';
+import { loadExtensionList } from './scraper';
+import { massScanner } from './mass-scanner';
+import { generateAllReports } from './report-generator';
+import { generateSocialContent } from './social-generator';
+import { writeToSupabase } from './supabase-writer';
+import { loadProgress } from './utils/progress';
 import type { ScanReport } from '@zovo/permissions-scanner';
 
-const BAR_WIDTH = 18;
-
-/**
- * Get a colored status icon/text based on grade.
- */
-function gradeIndicator(grade: string): string {
-  switch (grade) {
-    case 'A+':
-    case 'A':
-      return chalk.green('\u2705');
-    case 'B':
-      return chalk.green('\u2705');
-    case 'C':
-      return chalk.yellow('\u26A0\uFE0F');
-    case 'D':
-      return chalk.red('\uD83D\uDD34');
-    case 'F':
-      return chalk.red('\uD83D\uDD34');
-    default:
-      return '';
-  }
+interface ScanResult {
+  report: ScanReport;
+  extensionMeta: { id: string; name: string; category: string };
 }
 
-/**
- * Pad a string to a specific width with dots.
- */
-function padWithDots(name: string, targetWidth: number): string {
-  const maxNameLen = targetWidth - 2;
-  const displayName = name.length > maxNameLen ? name.slice(0, maxNameLen) : name;
-  const dotsNeeded = targetWidth - displayName.length;
-  return displayName + ' ' + '.'.repeat(Math.max(0, dotsNeeded - 1));
-}
+const program = new Command();
 
-/**
- * Build a progress bar string.
- */
-function buildBar(filled: number, total: number, width: number): string {
-  const filledCount = Math.round((filled / Math.max(total, 1)) * width);
-  const emptyCount = width - filledCount;
-  return '\u2588'.repeat(filledCount) + '\u2591'.repeat(emptyCount);
-}
+program
+  .name('zovo-bulk-scan')
+  .description('Bulk scan top Chrome extensions and generate reports')
+  .version('1.0.0');
 
-/**
- * Format duration in human-readable form.
- */
-function formatDuration(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  if (minutes > 0) {
-    return `${minutes}m ${remainingSeconds}s`;
-  }
-  return `${seconds}s`;
-}
+program
+  .command('scan')
+  .description('Run the bulk scanner')
+  .option('-l, --limit <number>', 'Maximum extensions to scan', '500')
+  .option('-r, --resume', 'Resume from last progress checkpoint', false)
+  .option('-d, --delay <ms>', 'Delay between scans in ms', '2000')
+  .option('--skip-supabase', 'Skip writing to Supabase', false)
+  .option('--output <dir>', 'Output directory for reports', 'data/results')
+  .action(async (opts) => {
+    const limit = parseInt(opts.limit, 10);
+    const delay = parseInt(opts.delay, 10);
+    const resume = opts.resume as boolean;
+    const skipSupabase = opts.skipSupabase as boolean;
+    const outputDir = opts.output as string;
 
-async function main(): Promise<void> {
-  const program = new Command();
+    console.log(chalk.bold.cyan('\n🔍 Zovo Bulk Scanner\n'));
+    console.log(chalk.gray(`  Limit: ${limit} extensions`));
+    console.log(chalk.gray(`  Delay: ${delay}ms between scans`));
+    console.log(chalk.gray(`  Resume: ${resume ? 'yes' : 'no'}`));
+    console.log(chalk.gray(`  Supabase: ${skipSupabase ? 'disabled' : 'enabled'}\n`));
 
-  program
-    .name('zovo-bulk-scanner')
-    .description('Bulk scan Chrome extensions for the Zovo Wall of Shame')
-    .version('1.0.0')
-    .option('--ids <ids>', 'Comma-separated extension IDs to scan')
-    .option('--file <path>', 'Path to a text file with extension IDs (one per line)')
-    .option('--limit <number>', 'Limit the number of extensions to scan', parseInt)
-    .option('--output <dir>', 'Output directory for results', './output')
-    .option('--delay <ms>', 'Delay between scans in milliseconds', parseInt, 2500);
+    // Step 1: Load extension list
+    const listSpinner = ora('Loading extension list...').start();
+    let extensions: Array<{ id: string; name: string; category: string }>;
+    try {
+      extensions = await loadExtensionList(limit);
+      listSpinner.succeed(`Loaded ${extensions.length} extensions`);
+    } catch (err) {
+      listSpinner.fail('Failed to load extension list');
+      console.error(err);
+      process.exit(1);
+    }
 
-  program.parse(process.argv);
+    // Step 2: Mass scan
+    console.log(chalk.bold('\n📡 Starting mass scan...\n'));
+    const { results, failures } = await massScanner(extensions, {
+      delayMs: delay,
+      resume,
+    });
 
-  const opts = program.opts<{
-    ids?: string;
-    file?: string;
-    limit?: number;
-    output: string;
-    delay: number;
-  }>();
+    console.log(chalk.bold(`\n✅ Scan complete: ${results.length} succeeded, ${failures.length} failed\n`));
 
-  // Resolve extension IDs
-  let extensionIds: string[];
-
-  if (opts.ids) {
-    extensionIds = parseIds(opts.ids);
-  } else if (opts.file) {
-    extensionIds = loadFromFile(opts.file);
-  } else {
-    extensionIds = loadTopExtensions();
-  }
-
-  // Apply limit
-  if (opts.limit && opts.limit > 0) {
-    extensionIds = extensionIds.slice(0, opts.limit);
-  }
-
-  if (extensionIds.length === 0) {
-    console.error(chalk.red('No extension IDs provided. Use --ids, --file, or the default list.'));
-    process.exit(1);
-  }
-
-  // Header
-  console.log('');
-  console.log(chalk.bold('\uD83D\uDD0D Zovo Bulk Scanner'));
-  console.log(chalk.dim('\u2501'.repeat(42)));
-  console.log(`Scanning ${chalk.bold(String(extensionIds.length))} extensions...\n`);
-
-  // Run the bulk scan
-  const outputDir = path.resolve(opts.output);
-
-  const results = await bulkScan({
-    extensionIds,
-    delayMs: opts.delay,
-    concurrency: 1,
-    onProgress: (current: number, total: number, report: ScanReport | null, error?: string) => {
-      const indexStr = String(current).padStart(String(total).length, ' ');
-      const prefix = `[${indexStr}/${total}]`;
-
-      if (report) {
-        const name = padWithDots(report.name, 28);
-        const gradeStr = report.grade.padEnd(2);
-        const icon = gradeIndicator(report.grade);
-        console.log(`${prefix} ${name} ${gradeStr} (${report.score}) ${icon}`);
-      } else {
-        const id = error
-          ? padWithDots(`ID: ${extensionIds[current - 1]}`, 28)
-          : padWithDots('Unknown', 28);
-        console.log(`${prefix} ${id} ${chalk.red('\u274C')} Error: ${error ?? 'Unknown error'}`);
+    // Step 3: Write to Supabase
+    if (!skipSupabase && results.length > 0) {
+      const sbSpinner = ora('Writing results to Supabase...').start();
+      try {
+        await writeToSupabase(results.map(r => r.report));
+        sbSpinner.succeed('Results written to Supabase');
+      } catch (err) {
+        sbSpinner.fail('Supabase write failed (non-fatal)');
+        console.error(chalk.yellow('  ' + (err instanceof Error ? err.message : String(err))));
       }
-    },
+    }
+
+    // Step 4: Generate reports
+    const reportSpinner = ora('Generating reports...').start();
+    try {
+      await generateAllReports(results, failures, outputDir);
+      reportSpinner.succeed('Reports generated');
+    } catch (err) {
+      reportSpinner.fail('Report generation failed');
+      console.error(err);
+      process.exit(1);
+    }
+
+    // Step 5: Generate social content
+    const socialSpinner = ora('Generating social media content...').start();
+    try {
+      await generateSocialContent(results, outputDir);
+      socialSpinner.succeed('Social content generated');
+    } catch (err) {
+      socialSpinner.fail('Social content generation failed (non-fatal)');
+      console.error(chalk.yellow('  ' + (err instanceof Error ? err.message : String(err))));
+    }
+
+    console.log(chalk.bold.green('\n🎉 All done! Reports saved to: ' + outputDir + '\n'));
   });
 
-  // Export results
-  exportToJson(results, outputDir);
-  const csvPath = exportToCsv(results, outputDir);
+program
+  .command('report')
+  .description('Regenerate reports from existing progress data')
+  .option('--output <dir>', 'Output directory for reports', 'data/results')
+  .action(async (opts) => {
+    const outputDir = opts.output as string;
+    const progress = loadProgress();
 
-  // Summary
-  const { stats } = results;
+    if (progress.results.length === 0) {
+      console.log(chalk.yellow('No scan results found. Run "scan" first.'));
+      process.exit(1);
+    }
 
-  console.log('');
-  console.log(chalk.dim('\u2501'.repeat(42)));
-  console.log(chalk.bold('\uD83D\uDCCA Results Summary'));
-  console.log(
-    `  Total: ${stats.total} | Success: ${chalk.green(String(stats.successful))} | Failed: ${chalk.red(String(stats.failed))}`
-  );
-  console.log(`  Average Score: ${chalk.bold(String(stats.averageScore))}`);
-  console.log(`  Median Score: ${chalk.bold(String(stats.medianScore))}`);
-  console.log(`  Duration: ${formatDuration(results.duration)}`);
-  console.log('');
+    console.log(chalk.bold.cyan(`\n📊 Regenerating reports from ${progress.results.length} results...\n`));
 
-  // Grade distribution
-  console.log('  Grade Distribution:');
-  const gradeOrder = ['A+', 'A', 'B', 'C', 'D', 'F'];
-  for (const grade of gradeOrder) {
-    const count = stats.gradeDistribution[grade] ?? 0;
-    const pct = stats.successful > 0 ? ((count / stats.successful) * 100).toFixed(1) : '0.0';
-    const bar = buildBar(count, stats.successful, BAR_WIDTH);
-    const gradeLabel = grade.padEnd(2);
-    console.log(`  ${gradeLabel} ${bar}  ${count} (${pct}%)`);
-  }
-
-  console.log('');
-
-  // Best and worst
-  if (stats.bestExtensions.length > 0) {
-    const best = stats.bestExtensions[0];
-    console.log(
-      `  \uD83C\uDFC6 Best: ${best.name} (${best.grade}, ${best.score})`
+    await generateAllReports(
+      progress.results.map(r => ({
+        report: r.report,
+        extensionMeta: { id: r.report.extension_id, name: r.report.name, category: '' },
+      })),
+      progress.failures,
+      outputDir,
     );
-  }
-  if (stats.worstOffenders.length > 0) {
-    const worst = stats.worstOffenders[0];
-    console.log(
-      `  \uD83D\uDC80 Worst: ${worst.name} (${worst.grade}, ${worst.score})`
+    await generateSocialContent(
+      progress.results.map(r => ({
+        report: r.report,
+        extensionMeta: { id: r.report.extension_id, name: r.report.name, category: '' },
+      })),
+      outputDir,
     );
-  }
 
-  console.log('');
-  console.log(`  Output: ${path.join(outputDir, 'scan-results.json')}`);
-  console.log(`  Output: ${csvPath}`);
-  console.log(`  Output: ${path.join(outputDir, 'wall-of-shame.json')}`);
-  console.log(`  Output: ${path.join(outputDir, 'leaderboard.json')}`);
-  console.log(`  Output: ${path.join(outputDir, 'summary.json')}`);
-  console.log('');
-}
+    console.log(chalk.bold.green('\n🎉 Reports regenerated in: ' + outputDir + '\n'));
+  });
 
-main().catch((err) => {
-  console.error(chalk.red('Fatal error:'), err);
-  process.exit(1);
-});
+program.parse();
