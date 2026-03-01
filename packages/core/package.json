@@ -1,0 +1,43 @@
+{
+  "name": "@zovo/permissions-scanner",
+  "version": "1.0.0",
+  "description": "Chrome extension permissions scanner — privacy/security grading engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "chrome-extension",
+    "permissions",
+    "scanner",
+    "privacy",
+    "security",
+    "grading"
+  ],
+  "author": "Zovo <https://zovo.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theluckystrike/zovo-permissions-scanner"
+  },
+  "homepage": "https://scan.zovo.dev",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.0"
+  }
+}

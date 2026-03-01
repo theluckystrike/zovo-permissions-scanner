@@ -1,0 +1,7 @@
+{
+  "manifest_version": 2,
+  "name": "MV2 Tab Manager",
+  "version": "1.0.0",
+  "description": "Same as moderate but in MV2 format",
+  "permissions": ["tabs", "storage", "notifications", "webNavigation", "contextMenus"]
+}

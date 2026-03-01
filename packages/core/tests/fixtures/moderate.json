@@ -1,0 +1,7 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Manager Pro",
+  "version": "2.1.0",
+  "description": "Organize and manage your tabs",
+  "permissions": ["tabs", "storage", "notifications", "webNavigation", "contextMenus"]
+}

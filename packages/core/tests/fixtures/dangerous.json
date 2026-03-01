@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Sketchy Toolbar",
+  "version": "0.9.0",
+  "description": "A toolbar with way too many permissions",
+  "permissions": ["cookies", "webRequest", "webRequestBlocking", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
