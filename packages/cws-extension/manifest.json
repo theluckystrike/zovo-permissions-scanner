@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Zovo Extension Scanner",
+  "version": "1.0.0",
+  "description": "See privacy grades for Chrome extensions right on the Web Store",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://chromewebstore.google.com/*"],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Zovo Extension Scanner"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chromewebstore.google.com/detail/*"],
+      "js": ["src/content.js"],
+      "css": ["styles/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

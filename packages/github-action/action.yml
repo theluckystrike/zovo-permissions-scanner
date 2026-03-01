@@ -1,0 +1,36 @@
+name: 'Zovo Permissions Scanner'
+description: 'Scan Chrome extension permissions and post a privacy/security grade on PRs'
+author: 'Zovo'
+branding:
+  icon: 'shield'
+  color: 'green'
+
+inputs:
+  manifest-path:
+    description: 'Path to manifest.json (default: manifest.json)'
+    required: false
+    default: 'manifest.json'
+  github-token:
+    description: 'GitHub token for posting PR comments'
+    required: true
+    default: '${{ github.token }}'
+  fail-below:
+    description: 'Fail the check if score is below this threshold (0-100, default: 0 = never fail)'
+    required: false
+    default: '0'
+  comment:
+    description: 'Whether to post a PR comment with results (default: true)'
+    required: false
+    default: 'true'
+
+outputs:
+  score:
+    description: 'The privacy/security score (0-100)'
+  grade:
+    description: 'The letter grade (A+ to F)'
+  report:
+    description: 'Full JSON report'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

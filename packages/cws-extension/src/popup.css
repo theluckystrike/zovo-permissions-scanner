@@ -1,0 +1,216 @@
+/*
+ * Zovo Extension Scanner — Popup Styles
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 350px;
+  min-height: 200px;
+  background: #ffffff;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+#app {
+  padding: 16px 20px;
+}
+
+/* ── Header ── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 14px;
+}
+
+.header-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ── States ── */
+
+.state {
+  padding: 8px 0;
+}
+
+/* Loading */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Not CWS */
+
+.not-cws-state {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.muted-text {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+/* Error */
+
+.error-text {
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* ── Result ── */
+
+.grade-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.grade-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.grade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grade-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.grade-score {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-line {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+/* ── Risks list ── */
+
+.risks-list {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
+  margin-bottom: 10px;
+}
+
+.risk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.risk-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.risk-text {
+  line-height: 1.4;
+}
+
+.risk-text strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* ── Full report link ── */
+
+.full-report-link {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+/* ── Footer ── */
+
+.footer {
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.footer a {
+  color: #9ca3af;
+}
+
+.footer a:hover {
+  color: #6b7280;
+}
+
+.footer-sep {
+  margin: 0 6px;
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@zovo/scan-action",
+  "version": "1.0.0",
+  "description": "GitHub Action to scan Chrome extension permissions",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build dist/index.js -o dist --minify",
+    "build:ts": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zovo/permissions-scanner": "file:../core",
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "@vercel/ncc": "^0.38.0"
+  },
+  "license": "MIT"
+}

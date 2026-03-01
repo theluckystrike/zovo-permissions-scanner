@@ -1,0 +1,22 @@
+/*
+ * Zovo Extension Scanner — Overlay Host Styles
+ *
+ * These styles apply to the shadow DOM host element only.
+ * All internal overlay styles are defined inline within the shadow root
+ * (in content.js) to ensure complete isolation from CWS page styles.
+ */
+
+#zovo-scanner-overlay {
+  display: block;
+  position: relative;
+  z-index: 10000;
+  width: 100%;
+  max-width: 400px;
+  margin: 12px auto 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  /* Reset inherited styles from CWS */
+  text-align: left;
+  direction: ltr;
+  unicode-bidi: isolate;
+}

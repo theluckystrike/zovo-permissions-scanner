@@ -9,6 +9,11 @@ Open-source Chrome extension permissions scanner that analyzes any browser exten
 | Package | Description |
 |---------|-------------|
 | [`@zovo/permissions-scanner`](./packages/core/) | Core scanner engine — TypeScript library |
+| [`@zovo/scan`](./packages/cli/) | CLI tool — scan from your terminal |
+| [`@zovo/scan-api`](./packages/api/) | REST API — Hono on Cloudflare Workers |
+| [`@zovo/scan-action`](./packages/github-action/) | GitHub Action — scan PRs automatically |
+| [CWS Extension](./packages/cws-extension/) | Chrome extension — grades on the Web Store |
+| [`@zovo/bulk-scanner`](./packages/bulk-scanner/) | Bulk scanner — scan top 500 extensions |
 
 ## Links
 
