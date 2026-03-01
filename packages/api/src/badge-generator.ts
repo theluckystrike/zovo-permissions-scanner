@@ -1,6 +1,5 @@
 import type { ScanReport, Grade } from '@zovo/permissions-scanner';
-
-type BadgeStyle = 'flat' | 'plastic' | 'for-the-badge';
+import type { BadgeStyle } from './types';
 
 /** Grade-to-color mapping matching the project brief. */
 const GRADE_COLORS: Record<Grade, string> = {
@@ -12,31 +11,36 @@ const GRADE_COLORS: Record<Grade, string> = {
   F: '#1f2937',
 };
 
-/** Approximate pixel width per character at the default font size. */
+/** Approximate pixel width per character at the default font size (~11 px). */
 const CHAR_WIDTH = 7;
 
 /** Padding added to each side of a text section. */
 const SIDE_PADDING = 6;
 
 /**
- * Estimate the pixel width of a string in the badge font.
+ * Estimate the pixel width of a string given a per-character width.
  */
-function estimateTextWidth(text: string): number {
-  return text.length * CHAR_WIDTH + SIDE_PADDING * 2;
+function estimateTextWidth(text: string, charWidth = CHAR_WIDTH, padding = SIDE_PADDING): number {
+  return text.length * charWidth + padding * 2;
 }
 
 /**
  * Generate a shields.io-style SVG badge for a scan report.
  *
- * Badge format: [Zovo Score | {grade} {score}]
+ * Badge format: `[Zovo Score | {grade} {score}]`
  *
- * @param report  The scan report to generate a badge for.
- * @param style   Badge style: 'flat' (default), 'plastic', or 'for-the-badge'.
- * @returns       A valid SVG string.
+ * Three styles are supported:
+ * - **flat** (default) -- 20 px height, linear gradient overlay, rounded corners.
+ * - **plastic** -- 20 px height, multi-stop glossy gradient.
+ * - **for-the-badge** -- 28 px height, uppercase text, letter-spacing 1, font-size 9.
+ *
+ * @param report  The scan report to render.
+ * @param style   Badge style (defaults to `'flat'`).
+ * @returns       A complete SVG string.
  */
 export function generateBadge(
   report: ScanReport,
-  style: BadgeStyle = 'flat'
+  style: BadgeStyle = 'flat',
 ): string {
   const gradeColor = GRADE_COLORS[report.grade] ?? '#1f2937';
   const valueText = `${report.grade} ${report.score}`;
@@ -52,7 +56,7 @@ export function generateBadge(
   }
 }
 
-// ── Flat Style ──────────────────────────────────────────────────────────
+// ── Flat Style ──────────────────────────────────────────────────────────────
 
 function generateFlat(gradeColor: string, valueText: string): string {
   const label = 'Zovo Score';
@@ -82,7 +86,7 @@ function generateFlat(gradeColor: string, valueText: string): string {
 </svg>`;
 }
 
-// ── Plastic Style ───────────────────────────────────────────────────────
+// ── Plastic Style ───────────────────────────────────────────────────────────
 
 function generatePlastic(gradeColor: string, valueText: string): string {
   const label = 'Zovo Score';
@@ -114,15 +118,15 @@ function generatePlastic(gradeColor: string, valueText: string): string {
 </svg>`;
 }
 
-// ── For-the-Badge Style ─────────────────────────────────────────────────
+// ── For-the-Badge Style ─────────────────────────────────────────────────────
 
 function generateForTheBadge(gradeColor: string, valueText: string): string {
   const label = 'ZOVO SCORE';
   const value = valueText.toUpperCase();
   const charWidth = 6.5;
   const sidePadding = 9;
-  const labelWidth = label.length * charWidth + sidePadding * 2;
-  const valueWidth = value.length * charWidth + sidePadding * 2;
+  const labelWidth = estimateTextWidth(label, charWidth, sidePadding);
+  const valueWidth = estimateTextWidth(value, charWidth, sidePadding);
   const totalWidth = labelWidth + valueWidth;
   const labelCenter = labelWidth / 2;
   const valueCenter = labelWidth + valueWidth / 2;

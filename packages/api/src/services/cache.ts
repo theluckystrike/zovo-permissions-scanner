@@ -1,14 +1,24 @@
 import type { ScanReport } from '@zovo/permissions-scanner';
 import type { Bindings } from '../types';
 
+/** KV key prefix for cached scan reports. */
+const KEY_PREFIX = 'report:';
+
+/** Cache TTL in seconds (24 hours). */
+const TTL_SECONDS = 86_400;
+
 /**
  * Retrieve a cached scan report from Cloudflare KV.
+ *
+ * @param extensionId  32-character Chrome Web Store extension ID.
+ * @param env          Cloudflare Worker bindings (KV + secrets).
+ * @returns            The cached {@link ScanReport}, or `null` if not found / unparseable.
  */
 export async function getCachedReport(
   extensionId: string,
-  env: Bindings
+  env: Bindings,
 ): Promise<ScanReport | null> {
-  const key = `report:${extensionId}`;
+  const key = `${KEY_PREFIX}${extensionId}`;
   const raw = await env.SCAN_CACHE.get(key);
 
   if (raw === null) {
@@ -23,21 +33,27 @@ export async function getCachedReport(
 }
 
 /**
- * Cache a scan report in Cloudflare KV (24h TTL) and optionally
+ * Cache a scan report in Cloudflare KV (24 h TTL) and optionally
  * persist to Supabase for long-term storage.
+ *
+ * Supabase persistence is best-effort -- a failure there will never
+ * reject the returned promise.
+ *
+ * @param report  The scan report to store.
+ * @param env     Cloudflare Worker bindings (KV + secrets).
  */
 export async function cacheReport(
   report: ScanReport,
-  env: Bindings
+  env: Bindings,
 ): Promise<void> {
-  const key = `report:${report.extension_id}`;
+  const key = `${KEY_PREFIX}${report.extension_id}`;
 
-  // Store in KV with 24-hour TTL
+  // ── KV (primary cache) ──
   await env.SCAN_CACHE.put(key, JSON.stringify(report), {
-    expirationTtl: 86400,
+    expirationTtl: TTL_SECONDS,
   });
 
-  // Persist to Supabase if credentials available
+  // ── Supabase (optional long-term persistence) ──
   if (env.SUPABASE_URL && env.SUPABASE_KEY) {
     const row = {
       extension_id: report.extension_id,
@@ -46,7 +62,7 @@ export async function cacheReport(
       score: report.score,
       grade: report.grade,
       label: report.label,
-      report: report,
+      report,
       scanned_at: report.scanned_at,
     };
 
@@ -62,7 +78,7 @@ export async function cacheReport(
         body: JSON.stringify(row),
       });
     } catch {
-      // Best-effort — don't fail the request
+      // Best-effort -- don't fail the request if Supabase is unreachable.
     }
   }
 }

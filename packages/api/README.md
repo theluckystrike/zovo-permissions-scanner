@@ -1,14 +1,15 @@
-# Zovo Permissions Scanner — API
+# @zovo/scan-api
 
-REST API for scanning, scoring, and reporting on Chrome extension permissions.
+REST API for the Zovo Permissions Scanner
+
+---
 
 ## Base URL
 
 | Environment | URL |
 |-------------|-----|
 | Development | `http://localhost:8787/api` |
-| Staging | `https://zovo-scan-api.{account}.workers.dev/api` |
-| Production | `https://api.scan.zovo.dev` *(planned)* |
+| Production  | `https://api.scan.zovo.dev/api` |
 
 ---
 
@@ -16,7 +17,7 @@ REST API for scanning, scoring, and reporting on Chrome extension permissions.
 
 ### GET /api/health
 
-Returns the current health status of the API.
+Returns the current health status and version of the API.
 
 **Response**
 
@@ -31,42 +32,46 @@ Returns the current health status of the API.
 
 ```bash
 curl https://api.scan.zovo.dev/api/health
+# {"status":"ok","version":"1.0.0"}
 ```
 
 ---
 
 ### POST /api/scan
 
-Scan an extension by its Chrome Web Store ID **or** by providing a raw manifest.
+Triggers a fresh permissions scan for a Chrome extension. You can provide either an extension ID (to fetch the manifest from the Chrome Web Store) or supply the manifest directly.
 
 **Request Body**
 
-Provide **one** of:
+| Field          | Type   | Required | Description |
+|----------------|--------|----------|-------------|
+| `extension_id` | string | One of   | Chrome Web Store extension ID |
+| `manifest`     | object | One of   | Raw Chrome extension manifest JSON |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `extension_id` | `string` | Chrome Web Store extension ID |
-| `manifest` | `object` | A raw `manifest.json` object to analyse |
+**Rate Limit:** 10 requests per minute per IP.
 
-**Rate Limit:** 10 requests / minute per IP
+**Response:** Full `ScanReport` JSON (see [Response Format](#response-format) below).
 
-**Response** — Full `ScanReport` (see [Response Format](#response-format) below).
+**Examples**
 
-**Example**
+Scan by extension ID:
 
 ```bash
-# Scan by extension ID
 curl -X POST https://api.scan.zovo.dev/api/scan \
   -H "Content-Type: application/json" \
-  -d '{ "extension_id": "abc123def456" }'
+  -d '{"extension_id":"cjpalhdlnbpafiamejdnhcphjbkeiagm"}'
+```
 
-# Scan by raw manifest
+Scan by manifest:
+
+```bash
 curl -X POST https://api.scan.zovo.dev/api/scan \
   -H "Content-Type: application/json" \
   -d '{
     "manifest": {
       "name": "My Extension",
       "version": "1.0.0",
+      "manifest_version": 3,
       "permissions": ["storage", "tabs"],
       "host_permissions": ["https://*/*"]
     }
@@ -77,210 +82,253 @@ curl -X POST https://api.scan.zovo.dev/api/scan \
 
 ### GET /api/report/:extension_id
 
-Retrieve the cached scan report for an extension. If no cached report exists (or if the cache has expired), a new scan is triggered automatically.
+Returns a cached scan report for the given extension. If the cached report is older than 24 hours, a fresh scan is triggered automatically before returning the result.
 
 **Path Parameters**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `extension_id` | `string` | Chrome Web Store extension ID |
+| Parameter      | Type   | Description |
+|----------------|--------|-------------|
+| `extension_id` | string | Chrome Web Store extension ID |
 
-**Cache:** 24 hours
-
-**Response** — Full `ScanReport` (see [Response Format](#response-format) below).
+**Response:** Full `ScanReport` JSON (see [Response Format](#response-format) below).
 
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/report/abc123def456
+curl https://api.scan.zovo.dev/api/report/cjpalhdlnbpafiamejdnhcphjbkeiagm
 ```
 
 ---
 
 ### GET /api/badge/:extension_id
 
-Returns an SVG badge image showing the extension's Zovo score and grade.
+Returns an SVG badge image showing the extension's Zovo privacy score and grade. Useful for embedding in README files, websites, and documentation.
 
 **Path Parameters**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `extension_id` | `string` | Chrome Web Store extension ID |
+| Parameter      | Type   | Description |
+|----------------|--------|-------------|
+| `extension_id` | string | Chrome Web Store extension ID |
 
 **Query Parameters**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `style` | `string` | `flat` | Badge style: `flat`, `plastic`, or `for-the-badge` |
-
-**Cache:** 24 hours
+| Parameter | Type   | Default | Description |
+|-----------|--------|---------|-------------|
+| `style`   | string | `flat`  | Badge style: `flat`, `plastic`, or `for-the-badge` |
 
 **Response:** `image/svg+xml`
-
-**Usage in Markdown**
-
-```markdown
-![Zovo Score](https://api.scan.zovo.dev/api/badge/abc123def456)
-![Zovo Score](https://api.scan.zovo.dev/api/badge/abc123def456?style=for-the-badge)
-```
 
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/badge/abc123def456?style=flat
+curl https://api.scan.zovo.dev/api/badge/cjpalhdlnbpafiamejdnhcphjbkeiagm?style=flat
+```
+
+**Markdown Usage**
+
+```markdown
+![Zovo Score](https://api.scan.zovo.dev/api/badge/EXTENSION_ID)
+```
+
+With a specific style:
+
+```markdown
+![Zovo Score](https://api.scan.zovo.dev/api/badge/EXTENSION_ID?style=for-the-badge)
 ```
 
 ---
 
 ### GET /api/compare/:id1/:id2
 
-Compare two extensions side-by-side.
+Returns a side-by-side comparison of two extensions' scan reports, including score differences and permission deltas.
 
 **Path Parameters**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id1` | `string` | First extension ID |
-| `id2` | `string` | Second extension ID |
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| `id1`     | string | First extension's Chrome Web Store ID |
+| `id2`     | string | Second extension's Chrome Web Store ID |
 
-**Response**
-
-```json
-{
-  "extensions": [
-    { "...ScanReport for id1..." },
-    { "...ScanReport for id2..." }
-  ],
-  "comparison": {
-    "winner_id": "abc123def456",
-    "score_diff": 15,
-    "summary": "Extension A requests fewer permissions and avoids remote code execution, earning a higher trust score."
-  }
-}
-```
+**Response:** Comparison JSON containing both reports and a diff summary.
 
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/compare/abc123def456/xyz789ghi012
+curl https://api.scan.zovo.dev/api/compare/cjpalhdlnbpafiamejdnhcphjbkeiagm/gighmmpiobklfepjocnamgkkbiglidom
+```
+
+**Response Example**
+
+```json
+{
+  "extension_a": {
+    "extension_id": "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+    "name": "uBlock Origin",
+    "score": 82,
+    "grade": "A"
+  },
+  "extension_b": {
+    "extension_id": "gighmmpiobklfepjocnamgkkbiglidom",
+    "name": "AdBlock",
+    "score": 65,
+    "grade": "B"
+  },
+  "diff": {
+    "score_difference": 17,
+    "permissions_only_in_a": ["webNavigation"],
+    "permissions_only_in_b": ["contextMenus", "notifications"],
+    "shared_permissions": ["storage", "tabs", "webRequest"]
+  }
+}
 ```
 
 ---
 
 ## Response Format
 
-All scan-related endpoints return a **ScanReport** JSON object:
+All scan endpoints return a `ScanReport` JSON object. Below is the full schema with a realistic example.
+
+### ScanReport Schema
+
+| Field           | Type     | Description |
+|-----------------|----------|-------------|
+| `extension_id`  | string   | Chrome Web Store extension ID |
+| `name`          | string   | Extension display name |
+| `version`       | string   | Extension version string |
+| `score`         | integer  | Privacy score from 0 (worst) to 100 (best) |
+| `grade`         | string   | Letter grade: A, B, C, D, or F |
+| `label`         | string   | Human-readable label: "Safe", "Caution", "Warning", or "Danger" |
+| `report`        | object   | Detailed breakdown of the scan results |
+| `scanned_at`    | string   | ISO 8601 timestamp of when the scan was performed |
+
+### Example Response
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "extension_id": "abc123def456",
-  "name": "My Extension",
-  "version": "1.0.0",
-  "score": 72,
-  "grade": "B",
-  "label": "Moderate Risk",
-  "scanned_at": "2026-03-01T12:00:00.000Z",
+  "extension_id": "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+  "name": "uBlock Origin",
+  "version": "1.56.0",
+  "score": 82,
+  "grade": "A",
+  "label": "Safe",
   "report": {
     "permissions": {
-      "requested": ["storage", "tabs", "activeTab"],
-      "risky": ["tabs"],
-      "safe": ["storage", "activeTab"],
-      "score_impact": -8
+      "declared": ["storage", "tabs", "webNavigation", "webRequest", "webRequestBlocking"],
+      "host_permissions": ["<all_urls>"],
+      "optional_permissions": [],
+      "risk_breakdown": [
+        {
+          "permission": "webRequest",
+          "risk": "medium",
+          "reason": "Can observe all browser HTTP requests"
+        },
+        {
+          "permission": "webRequestBlocking",
+          "risk": "high",
+          "reason": "Can modify or block HTTP requests before they complete"
+        },
+        {
+          "permission": "<all_urls>",
+          "risk": "high",
+          "reason": "Host permission grants access to all websites"
+        },
+        {
+          "permission": "storage",
+          "risk": "low",
+          "reason": "Extension-scoped storage only"
+        },
+        {
+          "permission": "tabs",
+          "risk": "medium",
+          "reason": "Can read tab URLs and metadata"
+        }
+      ]
     },
-    "host_permissions": {
-      "patterns": ["https://*/*"],
-      "scope": "broad",
-      "score_impact": -15
+    "data_access": {
+      "can_read_browsing_history": true,
+      "can_read_page_content": true,
+      "can_modify_requests": true,
+      "can_access_cookies": false,
+      "can_access_downloads": false
     },
-    "content_security_policy": {
-      "has_csp": true,
-      "allows_eval": false,
-      "allows_remote_code": false,
-      "score_impact": 0
+    "signals": {
+      "has_content_scripts": true,
+      "has_background_service_worker": true,
+      "has_devtools_page": false,
+      "uses_remote_code": false,
+      "content_security_policy": "script-src 'self'; object-src 'self'"
     },
-    "manifest_version": 3,
-    "data_exposure": {
-      "sends_data_externally": false,
-      "third_party_domains": [],
-      "score_impact": 0
-    },
-    "findings": [
-      {
-        "severity": "warning",
-        "code": "BROAD_HOST_PERMISSIONS",
-        "message": "Extension requests access to all HTTPS sites.",
-        "score_impact": -15
-      },
-      {
-        "severity": "info",
-        "code": "TABS_PERMISSION",
-        "message": "The 'tabs' permission allows reading tab URLs and titles.",
-        "score_impact": -8
-      }
-    ],
-    "recommendations": [
-      "Narrow host_permissions to only the domains the extension needs.",
-      "Consider using activeTab instead of the tabs permission."
-    ]
-  }
+    "scoring": {
+      "base_score": 100,
+      "deductions": [
+        { "reason": "Host permission: <all_urls>", "points": -8 },
+        { "reason": "Permission: webRequestBlocking", "points": -5 },
+        { "reason": "Permission: webRequest", "points": -3 },
+        { "reason": "Permission: tabs", "points": -2 }
+      ],
+      "final_score": 82
+    }
+  },
+  "scanned_at": "2026-03-01T12:00:00.000Z"
 }
 ```
-
-### ScanReport Field Reference
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `UUID` | Unique report identifier |
-| `extension_id` | `string` | Chrome Web Store extension ID |
-| `name` | `string \| null` | Extension display name |
-| `version` | `string \| null` | Extension version string |
-| `score` | `integer` | Trust score from 0 (dangerous) to 100 (safe) |
-| `grade` | `string` | Letter grade: `A+`, `A`, `B`, `C`, `D`, `F` |
-| `label` | `string` | Human-readable risk label (e.g. "Safe", "Low Risk", "Moderate Risk", "High Risk", "Dangerous") |
-| `scanned_at` | `ISO 8601` | Timestamp of the scan |
-| `report` | `object` | Detailed breakdown (see below) |
-| `report.permissions` | `object` | Analysis of declared permissions |
-| `report.host_permissions` | `object` | Analysis of host permission patterns and scope |
-| `report.content_security_policy` | `object` | CSP analysis (eval, remote code) |
-| `report.manifest_version` | `integer` | Manifest version (2 or 3) |
-| `report.data_exposure` | `object` | External data-sending analysis |
-| `report.findings` | `array` | List of individual findings with severity, code, message, and score impact |
-| `report.recommendations` | `array` | Actionable suggestions to improve the extension's score |
 
 ---
 
 ## Rate Limits
 
-| Endpoint | Limit |
-|----------|-------|
-| Public API (general) | 60 requests / minute per IP |
-| `POST /api/scan` | 10 requests / minute per IP |
-| `GET /api/badge/:id` | 300 requests / minute |
+All endpoints are rate-limited. Exceeding the limit returns a `429 Too Many Requests` response.
 
-Rate-limited responses return HTTP `429 Too Many Requests` with a `Retry-After` header.
+| Endpoint         | Limit              |
+|------------------|--------------------|
+| General          | 60 requests/min per IP |
+| POST /api/scan   | 10 requests/min per IP |
+| GET /api/badge   | 300 requests/min   |
 
 ---
 
 ## Error Responses
 
-All errors follow a consistent shape:
+All errors follow a consistent JSON format:
 
 ```json
 {
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "No scan report found for extension ID 'xyz'."
-  }
+  "error": "description of the error",
+  "code": 400
 }
 ```
 
-| HTTP Status | Code | Description |
-|-------------|------|-------------|
-| `400` | `BAD_REQUEST` | Missing or invalid request body |
-| `404` | `NOT_FOUND` | Extension or report not found |
-| `429` | `RATE_LIMITED` | Too many requests |
-| `500` | `INTERNAL_ERROR` | Unexpected server error |
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400  | Bad Request -- Invalid or missing parameters |
+| 404  | Not Found -- Extension not found in Chrome Web Store |
+| 429  | Too Many Requests -- Rate limit exceeded |
+| 500  | Internal Server Error -- Something went wrong on our end |
+
+**Examples**
+
+```json
+{
+  "error": "Missing required field: extension_id or manifest",
+  "code": 400
+}
+```
+
+```json
+{
+  "error": "Extension not found: xyz123",
+  "code": 404
+}
+```
+
+```json
+{
+  "error": "Rate limit exceeded. Try again in 45 seconds.",
+  "code": 429
+}
+```
 
 ---
 
@@ -289,8 +337,12 @@ All errors follow a consistent shape:
 ```bash
 cd packages/api
 npm install
-npm run dev  # starts wrangler dev server on http://localhost:8787
+npm run dev   # starts wrangler dev on localhost:8787
 ```
+
+The dev server runs on `http://localhost:8787` with hot-reload enabled via Wrangler.
+
+---
 
 ## Deployment
 
@@ -298,14 +350,33 @@ npm run dev  # starts wrangler dev server on http://localhost:8787
 npm run deploy  # deploys to Cloudflare Workers
 ```
 
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_KEY` | Supabase service role key |
-| `SCAN_CACHE` | Cloudflare KV namespace (configured in `wrangler.toml`) |
+This runs `wrangler deploy` under the hood. Make sure your Cloudflare account is authenticated via `wrangler login` before deploying.
 
 ---
 
-Powered by **Zovo** · [https://zovo.dev](https://zovo.dev)
+## Environment Variables
+
+| Variable        | Description |
+|-----------------|-------------|
+| `SUPABASE_URL`  | Supabase project URL |
+| `SUPABASE_KEY`  | Supabase service role key |
+| `SCAN_CACHE`    | Cloudflare KV namespace (configured in `wrangler.toml`) |
+
+Set secrets for Cloudflare Workers:
+
+```bash
+wrangler secret put SUPABASE_URL
+wrangler secret put SUPABASE_KEY
+```
+
+The `SCAN_CACHE` KV namespace is configured in `wrangler.toml`:
+
+```toml
+[[kv_namespaces]]
+binding = "SCAN_CACHE"
+id = "your-kv-namespace-id"
+```
+
+---
+
+Powered by Zovo -- https://zovo.dev

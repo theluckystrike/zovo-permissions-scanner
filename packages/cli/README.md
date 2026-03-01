@@ -63,9 +63,9 @@ zovo-scan --compare <id-1> <id-2> --json
 ## Example Output
 
 ```
-╔════════════════════════════════════════════════════════╗
-║  Zovo Permissions Scanner                              ║
-╚════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+║  Zovo Permissions Scanner                                ║
+╚══════════════════════════════════════════════════════════╝
 
   Extension:  Tab Manager Pro v2.1.0
   Score:      42/100
@@ -85,13 +85,20 @@ zovo-scan --compare <id-1> <id-2> --json
   ✅ GOOD: Uses optional_permissions for history (+3 points)
   ✅ GOOD: Has privacy policy URL (+3 points)
 
+  Full report: https://scan.zovo.dev/report/abc123def456
+
   ──────────────────────────────────────────────────────
-  Scanned by Zovo · https://scan.zovo.dev/report/abc123
+  Scanned by Zovo · https://zovo.dev
 ```
 
 ## Web Scanner
 
 For a browser-based experience, visit [scan.zovo.dev](https://scan.zovo.dev).
+
+## Links
+
+- **Web Scanner**: [scan.zovo.dev](https://scan.zovo.dev)
+- **Zovo**: [zovo.dev](https://zovo.dev)
 
 ## License
 

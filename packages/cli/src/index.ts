@@ -9,24 +9,24 @@ const program = new Command();
 program
   .name('zovo-scan')
   .version('1.0.0')
-  .description('Scan Chrome extension permissions and assess security risks');
+  .description('Scan Chrome extension permissions and assess risk');
 
-// Default command: scan
 program
-  .argument('<target>', 'Extension ID, path to manifest.json, or path to .crx file')
-  .option('--json', 'Output raw JSON (for piping)')
+  .argument('<target>', 'Extension ID, .crx file path, or manifest .json file path')
+  .option('--json', 'Output results as JSON')
   .option('--compare <target>', 'Compare with another extension')
   .action(async (target: string, options: { json?: boolean; compare?: string }) => {
     await scanCommand(target, options);
   });
 
-// Explicit compare subcommand
 program
   .command('compare <target1> <target2>')
-  .description('Compare two extensions side-by-side')
-  .option('--json', 'Output raw JSON (for piping)')
+  .description('Compare permissions of two extensions side-by-side')
+  .option('--json', 'Output results as JSON')
   .action(async (target1: string, target2: string, options: { json?: boolean }) => {
     await compareExtensions(target1, target2, !!options.json);
   });
 
-program.parse(process.argv);
+program.parseAsync(process.argv).catch(() => {
+  process.exit(1);
+});

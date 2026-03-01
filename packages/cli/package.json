@@ -2,12 +2,15 @@
   "name": "@zovo/scan",
   "version": "1.0.0",
   "description": "CLI tool to scan Chrome extension permissions",
-  "bin": { "zovo-scan": "./dist/index.js" },
+  "bin": {
+    "zovo-scan": "./dist/index.js"
+  },
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/index.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -18,8 +21,7 @@
   },
   "devDependencies": {
     "typescript": "^5.4.0",
-    "@types/node": "^20.0.0",
-    "ts-node": "^10.9.0"
+    "@types/node": "^20.0.0"
   },
   "license": "MIT"
 }

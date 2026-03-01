@@ -9,7 +9,3 @@ ENVIRONMENT = "production"
 binding = "SCAN_CACHE"
 id = "PLACEHOLDER_KV_ID"
 preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
-
-# Supabase credentials set via wrangler secret
-# wrangler secret put SUPABASE_URL
-# wrangler secret put SUPABASE_KEY

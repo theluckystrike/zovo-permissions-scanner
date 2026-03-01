@@ -11,7 +11,7 @@ const gradeColor = (grade: Grade): chalk.Chalk => {
     case 'B':
       return chalk.yellow;
     case 'C':
-      return chalk.hex('#FF8800');
+      return chalk.hex('#f97316');
     case 'D':
     case 'F':
       return chalk.red;
@@ -33,6 +33,22 @@ const severityEmoji = (severity: Severity): string => {
 
 const severityLabel = (severity: Severity): string => severity.toUpperCase();
 
+const gradeEmoji = (grade: Grade): string => {
+  switch (grade) {
+    case 'A+':
+    case 'A':
+      return '\u{1F7E2}';
+    case 'B':
+      return '\u{1F7E1}';
+    case 'C':
+      return '\u{1F7E0}';
+    case 'D':
+      return '\u{1F534}';
+    case 'F':
+      return '\u26AB';
+  }
+};
+
 // ── Box-drawing helpers ──
 
 const BOX_WIDTH = 56;
@@ -45,23 +61,6 @@ const boxRow = (text: string): string => {
 };
 
 const divider = `  ${'─'.repeat(BOX_WIDTH - 2)}`;
-
-// ── Grade emoji ──
-
-const gradeEmoji = (grade: Grade): string => {
-  switch (grade) {
-    case 'A+':
-    case 'A':
-      return '\u{1F7E2}';
-    case 'B':
-      return '\u{1F7E1}';
-    case 'C':
-      return '\u{1F7E0}';
-    case 'D':
-    case 'F':
-      return '\u{1F534}';
-  }
-};
 
 // ── Main formatter ──
 
@@ -107,23 +106,22 @@ export function formatTerminal(report: ScanReport): string {
   // Bonuses
   if (report.bonuses.length > 0) {
     for (const bonus of report.bonuses) {
-      lines.push(`  ${'\u2705'} ${chalk.bold.green('GOOD')}: ${bonus.reason}`);
+      lines.push(`  \u2705 ${chalk.bold.green('GOOD:')} ${bonus.reason}`);
     }
+    lines.push('');
+  }
+
+  // Full report link (only when extension_id is present)
+  if (report.extension_id) {
+    lines.push(
+      `  ${chalk.dim('Full report:')} ${chalk.cyan(`https://scan.zovo.dev/report/${report.extension_id}`)}`
+    );
     lines.push('');
   }
 
   // Footer
   lines.push(divider);
-
-  const footerParts = ['Scanned by Zovo'];
-  if (report.extension_id) {
-    footerParts.push(
-      `${chalk.dim('https://scan.zovo.dev/report/')}${chalk.cyan(report.extension_id)}`
-    );
-  } else {
-    footerParts.push(chalk.dim('https://zovo.dev'));
-  }
-  lines.push(`  ${footerParts.join(' \u00B7 ')}`);
+  lines.push(`  Scanned by Zovo ${chalk.dim('\u00B7')} ${chalk.dim('https://zovo.dev')}`);
   lines.push('');
 
   return lines.join('\n');

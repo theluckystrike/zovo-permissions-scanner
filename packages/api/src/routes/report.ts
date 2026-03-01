@@ -1,51 +1,38 @@
 import { Hono } from 'hono';
-import type { Bindings, ApiError } from '../types';
-import { getCachedReport, cacheReport } from '../services/cache';
+import type { Bindings } from '../types';
 import { scanExtension } from '../services/scanner';
+import { getCachedReport, cacheReport } from '../services/cache';
 
-const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const EXTENSION_ID_RE = /^[a-z]{32}$/;
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-const reportRoute = new Hono<{ Bindings: Bindings }>();
+export const reportRoutes = new Hono<{ Bindings: Bindings }>();
 
-/**
- * GET /report/:extension_id
- * Returns the ScanReport for the given extension.
- * Serves from cache if the report is less than 24 hours old.
- */
-reportRoute.get('/:extension_id', async (c) => {
+reportRoutes.get('/:extension_id', async (c) => {
   const extensionId = c.req.param('extension_id');
 
-  if (!extensionId || !/^[a-z]{32}$/.test(extensionId)) {
-    const err: ApiError = { error: 'Invalid extension_id format. Expected 32 lowercase letters.', code: 400 };
-    return c.json(err, 400);
+  if (!EXTENSION_ID_RE.test(extensionId)) {
+    return c.json({ error: 'Invalid extension_id. Must be 32 lowercase letters.', code: 400 }, 400);
   }
 
-  // ── Check Cache ──
-  try {
-    const cached = await getCachedReport(extensionId, c.env);
+  // ── Check cache ──
+  const cached = await getCachedReport(extensionId, c.env);
 
-    if (cached) {
-      const scannedAt = new Date(cached.scanned_at).getTime();
-      const age = Date.now() - scannedAt;
+  if (cached) {
+    const scannedAt = new Date(cached.scanned_at).getTime();
+    const age = Date.now() - scannedAt;
 
-      if (age < CACHE_MAX_AGE_MS) {
-        return c.json(cached, 200);
-      }
+    if (age < TWENTY_FOUR_HOURS_MS) {
+      return c.json(cached);
     }
-  } catch {
-    // Cache miss or error — proceed with fresh scan
   }
 
-  // ── Fresh Scan ──
+  // ── Fresh scan ──
   try {
-    const report = await scanExtension(extensionId, c.env);
+    const report = await scanExtension(extensionId);
     await cacheReport(report, c.env);
-    return c.json(report, 200);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Scan failed.';
-    const err: ApiError = { error: `Extension not found or scan failed: ${message}`, code: 404 };
-    return c.json(err, 404);
+    return c.json(report);
+  } catch {
+    return c.json({ error: 'Extension not found or scan failed.', code: 404 }, 404);
   }
 });
-
-export { reportRoute };
