@@ -44,7 +44,7 @@ export function scanManifest(
  * Scan from a CRX file buffer.
  */
 export async function scanFromCrx(
-  buffer: Buffer,
+  buffer: Uint8Array,
   options?: ScanOptions
 ): Promise<ScanReport> {
   const manifest = await extractManifestFromCrx(buffer);

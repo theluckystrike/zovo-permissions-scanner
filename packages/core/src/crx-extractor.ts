@@ -10,28 +10,41 @@ import { validateManifest } from './manifest-parser';
  *   - N bytes: header proto (skip)
  *   - rest: ZIP archive
  */
-const CRX_MAGIC = Buffer.from('Cr24');
+
+// "Cr24" as bytes — web-standard, no Buffer dependency
+const CRX_MAGIC = new Uint8Array([0x43, 0x72, 0x32, 0x34]);
+
+/** Read a little-endian uint32 from a Uint8Array at the given offset. */
+function readUint32LE(data: Uint8Array, offset: number): number {
+  return (
+    data[offset] |
+    (data[offset + 1] << 8) |
+    (data[offset + 2] << 16) |
+    ((data[offset + 3] << 24) >>> 0)
+  ) >>> 0;
+}
 
 /**
  * Extract manifest.json from a CRX3 file buffer.
  */
-export async function extractManifestFromCrx(buffer: Buffer): Promise<ChromeManifest> {
+export async function extractManifestFromCrx(buffer: Uint8Array): Promise<ChromeManifest> {
   // Validate CRX magic number
   if (buffer.length < 16) {
     throw new Error('Invalid CRX file: too small');
   }
 
-  const magic = buffer.subarray(0, 4);
-  if (!magic.equals(CRX_MAGIC)) {
-    throw new Error('Invalid CRX file: missing Cr24 magic number');
+  for (let i = 0; i < 4; i++) {
+    if (buffer[i] !== CRX_MAGIC[i]) {
+      throw new Error('Invalid CRX file: missing Cr24 magic number');
+    }
   }
 
-  const version = buffer.readUInt32LE(4);
+  const version = readUint32LE(buffer, 4);
   if (version !== 3) {
     throw new Error(`Unsupported CRX version: ${version} (expected 3)`);
   }
 
-  const headerLength = buffer.readUInt32LE(8);
+  const headerLength = readUint32LE(buffer, 8);
   const zipStart = 12 + headerLength;
 
   if (zipStart >= buffer.length) {
@@ -67,10 +80,13 @@ export async function extractManifestFromCrx(buffer: Buffer): Promise<ChromeMani
 /**
  * Download a CRX file from the Chrome Web Store by extension ID.
  */
-export async function downloadCrx(extensionId: string): Promise<Buffer> {
+export async function downloadCrx(extensionId: string): Promise<Uint8Array> {
   const url =
     `https://clients2.google.com/service/update2/crx` +
-    `?response=redirect&prodversion=120.0&x=id%3D${extensionId}%26uc`;
+    `?response=redirect&os=linux&arch=x86-64&os_arch=x86-64` +
+    `&nacl_arch=x86-64&prod=chromiumcrx&prodchannel=unknown` +
+    `&prodversion=130.0.0.0&acceptformat=crx3` +
+    `&x=id%3D${extensionId}%26uc`;
 
   const response = await fetch(url);
 
@@ -81,5 +97,5 @@ export async function downloadCrx(extensionId: string): Promise<Buffer> {
   }
 
   const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  return new Uint8Array(arrayBuffer);
 }

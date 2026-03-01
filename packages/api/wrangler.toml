@@ -1,11 +1,12 @@
 name = "zovo-scan-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "production"
 
 [[kv_namespaces]]
 binding = "SCAN_CACHE"
-id = "PLACEHOLDER_KV_ID"
-preview_id = "PLACEHOLDER_PREVIEW_KV_ID"
+id = "c64ec3183313442aa307033bb5593456"
+preview_id = "55c83b9a4a98494fa41af018fb0374ef"
