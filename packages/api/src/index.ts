@@ -11,9 +11,10 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: ['https://scan.zovo.dev', '*'],
+    origin: (origin) => origin || '*',
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
+    maxAge: 86400,
   }),
 );
 

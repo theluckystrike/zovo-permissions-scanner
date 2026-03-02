@@ -35,10 +35,7 @@ badgeRoutes.get('/:extension_id', async (c) => {
   // ── Generate SVG badge ──
   const svg = generateBadge(report, style);
 
-  return new Response(svg, {
-    headers: {
-      'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=86400',
-    },
-  });
+  c.header('Content-Type', 'image/svg+xml');
+  c.header('Cache-Control', 'public, max-age=86400');
+  return c.body(svg);
 });
