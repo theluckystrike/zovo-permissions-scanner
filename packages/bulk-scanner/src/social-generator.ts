@@ -72,7 +72,7 @@ export async function generateSocialContent(
   thread += `---\n\n`;
 
   thread += `5/ We built an open-source scanner so you can check any extension yourself.\n\n`;
-  thread += `\u{1F517} scan.zovo.dev\n`;
+  thread += `\u{1F517} scan.zovo.one\n`;
   thread += `\u2B50 github.com/theluckystrike/zovo-permissions-scanner\n\n`;
   thread += `Built by @ZovoDev\n`;
 
@@ -81,7 +81,7 @@ export async function generateSocialContent(
   // --- HN Submission ---
   let hn = `# Hacker News Submission\n\n`;
   hn += `**Title:** We scanned ${total} popular Chrome extensions for privacy — ${dOrFPct}% scored D or F\n\n`;
-  hn += `**URL:** https://scan.zovo.dev/report/top-${total}\n\n`;
+  hn += `**URL:** https://scan.zovo.one/report/top-${total}\n\n`;
   hn += `**Comment to post:**\n\n`;
   hn += `Hey HN,\n\n`;
   hn += `We built an open-source Chrome extension permissions scanner and used it to analyze the top ${total} most popular extensions.\n\n`;
@@ -90,7 +90,7 @@ export async function generateSocialContent(
   hn += `- ${dOrFPct}% scored D or F (excessive permissions)\n`;
   hn += `- ${allUrlsCount} extensions request access to ALL websites\n\n`;
   hn += `The scanner is fully open source: https://github.com/theluckystrike/zovo-permissions-scanner\n\n`;
-  hn += `You can scan any extension at https://scan.zovo.dev\n\n`;
+  hn += `You can scan any extension at https://scan.zovo.one\n\n`;
   hn += `Built with TypeScript. The scoring algorithm considers permission severity, dangerous combos, host permission breadth, and rewards extensions that use best practices like optional_permissions.\n\n`;
   hn += `Would love feedback on the scoring methodology.\n`;
 

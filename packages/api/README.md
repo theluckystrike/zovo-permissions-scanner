@@ -9,7 +9,7 @@ REST API for the Zovo Permissions Scanner
 | Environment | URL |
 |-------------|-----|
 | Development | `http://localhost:8787/api` |
-| Production  | `https://api.scan.zovo.dev/api` |
+| Production  | `https://api.zovo.one/api` |
 
 ---
 
@@ -31,7 +31,7 @@ Returns the current health status and version of the API.
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/health
+curl https://api.zovo.one/api/health
 # {"status":"ok","version":"1.0.0"}
 ```
 
@@ -57,7 +57,7 @@ Triggers a fresh permissions scan for a Chrome extension. You can provide either
 Scan by extension ID:
 
 ```bash
-curl -X POST https://api.scan.zovo.dev/api/scan \
+curl -X POST https://api.zovo.one/api/scan \
   -H "Content-Type: application/json" \
   -d '{"extension_id":"cjpalhdlnbpafiamejdnhcphjbkeiagm"}'
 ```
@@ -65,7 +65,7 @@ curl -X POST https://api.scan.zovo.dev/api/scan \
 Scan by manifest:
 
 ```bash
-curl -X POST https://api.scan.zovo.dev/api/scan \
+curl -X POST https://api.zovo.one/api/scan \
   -H "Content-Type: application/json" \
   -d '{
     "manifest": {
@@ -95,7 +95,7 @@ Returns a cached scan report for the given extension. If the cached report is ol
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/report/cjpalhdlnbpafiamejdnhcphjbkeiagm
+curl https://api.zovo.one/api/report/cjpalhdlnbpafiamejdnhcphjbkeiagm
 ```
 
 ---
@@ -121,19 +121,19 @@ Returns an SVG badge image showing the extension's Zovo privacy score and grade.
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/badge/cjpalhdlnbpafiamejdnhcphjbkeiagm?style=flat
+curl https://api.zovo.one/api/badge/cjpalhdlnbpafiamejdnhcphjbkeiagm?style=flat
 ```
 
 **Markdown Usage**
 
 ```markdown
-![Zovo Score](https://api.scan.zovo.dev/api/badge/EXTENSION_ID)
+![Zovo Score](https://api.zovo.one/api/badge/EXTENSION_ID)
 ```
 
 With a specific style:
 
 ```markdown
-![Zovo Score](https://api.scan.zovo.dev/api/badge/EXTENSION_ID?style=for-the-badge)
+![Zovo Score](https://api.zovo.one/api/badge/EXTENSION_ID?style=for-the-badge)
 ```
 
 ---
@@ -154,7 +154,7 @@ Returns a side-by-side comparison of two extensions' scan reports, including sco
 **Example**
 
 ```bash
-curl https://api.scan.zovo.dev/api/compare/cjpalhdlnbpafiamejdnhcphjbkeiagm/gighmmpiobklfepjocnamgkkbiglidom
+curl https://api.zovo.one/api/compare/cjpalhdlnbpafiamejdnhcphjbkeiagm/gighmmpiobklfepjocnamgkkbiglidom
 ```
 
 **Response Example**
@@ -379,4 +379,4 @@ id = "your-kv-namespace-id"
 
 ---
 
-Powered by Zovo -- https://zovo.dev
+Powered by Zovo -- https://zovo.one

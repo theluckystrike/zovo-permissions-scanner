@@ -114,14 +114,14 @@ export function formatTerminal(report: ScanReport): string {
   // Full report link (only when extension_id is present)
   if (report.extension_id) {
     lines.push(
-      `  ${chalk.dim('Full report:')} ${chalk.cyan(`https://scan.zovo.dev/report/${report.extension_id}`)}`
+      `  ${chalk.dim('Full report:')} ${chalk.cyan(`https://scan.zovo.one/report/${report.extension_id}`)}`
     );
     lines.push('');
   }
 
   // Footer
   lines.push(divider);
-  lines.push(`  Scanned by Zovo ${chalk.dim('\u00B7')} ${chalk.dim('https://zovo.dev')}`);
+  lines.push(`  Scanned by Zovo ${chalk.dim('\u00B7')} ${chalk.dim('https://zovo.one')}`);
   lines.push('');
 
   return lines.join('\n');

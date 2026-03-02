@@ -37,10 +37,10 @@ const STATUS_ICONS: Record<string, string> = {
 };
 
 const FOOTER =
-  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.dev">Zovo Permissions Scanner</a> \u00B7 <a href="https://github.com/theluckystrike/zovo-permissions-scanner">Add to your repo</a></sub>';
+  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.one">Zovo Permissions Scanner</a> \u00B7 <a href="https://github.com/theluckystrike/zovo-permissions-scanner">Add to your repo</a></sub>';
 
 const FOOTER_SIMPLE =
-  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.dev">Zovo Permissions Scanner</a></sub>';
+  '<sub>\uD83D\uDCE6 Scanned by <a href="https://scan.zovo.one">Zovo Permissions Scanner</a></sub>';
 
 // ── Helpers ──
 

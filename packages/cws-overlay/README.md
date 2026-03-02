@@ -126,8 +126,8 @@ Zovo scans Chrome extensions for risky permissions, missing privacy policies, an
 
 ## Links
 
-- **Scanner Dashboard**: [scan.zovo.dev](https://scan.zovo.dev)
-- **Zovo Home**: [zovo.dev](https://zovo.dev)
+- **Scanner Dashboard**: [scan.zovo.one](https://scan.zovo.one)
+- **Zovo Home**: [zovo.one](https://zovo.one)
 - **GitHub**: [github.com/nicepkg/zovo-permissions-scanner](https://github.com/nicepkg/zovo-permissions-scanner)
 
 ## License

@@ -22,13 +22,13 @@
     "security",
     "grading"
   ],
-  "author": "Zovo <https://zovo.dev>",
+  "author": "Zovo <https://zovo.one>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/theluckystrike/zovo-permissions-scanner"
   },
-  "homepage": "https://scan.zovo.dev",
+  "homepage": "https://scan.zovo.one",
   "engines": {
     "node": ">=20"
   },

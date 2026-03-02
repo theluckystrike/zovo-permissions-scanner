@@ -116,7 +116,7 @@ The action posts (or updates) a comment showing:
 Add a Zovo score badge to your extension's README:
 
 ```markdown
-[![Zovo Score](https://api.scan.zovo.dev/api/badge/YOUR_EXTENSION_ID)](https://scan.zovo.dev/report/YOUR_EXTENSION_ID)
+[![Zovo Score](https://api.zovo.one/api/badge/YOUR_EXTENSION_ID)](https://scan.zovo.one/report/YOUR_EXTENSION_ID)
 ```
 
 ## Grading Scale
@@ -132,9 +132,9 @@ Add a Zovo score badge to your extension's README:
 
 ## Links
 
-- Website: https://scan.zovo.dev
+- Website: https://scan.zovo.one
 - Core Engine: https://github.com/theluckystrike/zovo-permissions-scanner
-- Zovo: https://zovo.dev
+- Zovo: https://zovo.one
 
 ## License
 

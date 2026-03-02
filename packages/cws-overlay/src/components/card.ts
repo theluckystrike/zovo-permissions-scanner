@@ -163,10 +163,10 @@ export function createCard(report: ScanReport, onCollapse: () => void): HTMLElem
   const footer = el('div', 'zovo-card-footer');
   const footerText = document.createTextNode('Powered by Zovo \u00B7 ');
   const footerLink = document.createElement('a');
-  footerLink.href = 'https://zovo.dev';
+  footerLink.href = 'https://zovo.one';
   footerLink.target = '_blank';
   footerLink.rel = 'noopener noreferrer';
-  footerLink.textContent = 'zovo.dev';
+  footerLink.textContent = 'zovo.one';
   footer.appendChild(footerText);
   footer.appendChild(footerLink);
   card.appendChild(footer);

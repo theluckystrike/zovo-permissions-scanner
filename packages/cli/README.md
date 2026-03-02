@@ -85,20 +85,20 @@ zovo-scan --compare <id-1> <id-2> --json
   ✅ GOOD: Uses optional_permissions for history (+3 points)
   ✅ GOOD: Has privacy policy URL (+3 points)
 
-  Full report: https://scan.zovo.dev/report/abc123def456
+  Full report: https://scan.zovo.one/report/abc123def456
 
   ──────────────────────────────────────────────────────
-  Scanned by Zovo · https://zovo.dev
+  Scanned by Zovo · https://zovo.one
 ```
 
 ## Web Scanner
 
-For a browser-based experience, visit [scan.zovo.dev](https://scan.zovo.dev).
+For a browser-based experience, visit [scan.zovo.one](https://scan.zovo.one).
 
 ## Links
 
-- **Web Scanner**: [scan.zovo.dev](https://scan.zovo.dev)
-- **Zovo**: [zovo.dev](https://zovo.dev)
+- **Web Scanner**: [scan.zovo.one](https://scan.zovo.one)
+- **Zovo**: [zovo.one](https://zovo.one)
 
 ## License
 

@@ -17,8 +17,8 @@ Open-source Chrome extension permissions scanner that analyzes any browser exten
 
 ## Links
 
-- **Website:** [scan.zovo.dev](https://scan.zovo.dev)
-- **Zovo:** [zovo.dev](https://zovo.dev)
+- **Website:** [scan.zovo.one](https://scan.zovo.one)
+- **Zovo:** [zovo.one](https://zovo.one)
 
 ## License
 

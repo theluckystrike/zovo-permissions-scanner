@@ -108,4 +108,4 @@ interface ScanOptions {
 
 ## License
 
-MIT — [Zovo](https://zovo.dev)
+MIT — [Zovo](https://zovo.one)

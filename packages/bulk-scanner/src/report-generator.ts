@@ -79,7 +79,7 @@ function generateWallOfShame(results: ScanResult[]): string {
   const top50 = sorted.slice(0, 50);
 
   let md = `# 🔴 The Wall of Shame: Chrome's Most Permission-Hungry Extensions\n\n`;
-  md += `*Scanned March 2026 by [Zovo Permissions Scanner](https://scan.zovo.dev)*\n\n`;
+  md += `*Scanned March 2026 by [Zovo Permissions Scanner](https://scan.zovo.one)*\n\n`;
   md += `These are the 50 most popular Chrome extensions with the worst privacy scores.\n`;
   md += `Every extension on this list has millions of users.\n\n`;
   md += `| Rank | Extension | Score | Grade | Worst Risk |\n`;
@@ -99,7 +99,7 @@ function generateWallOfFame(results: ScanResult[]): string {
   const top20 = sorted.slice(0, 20);
 
   let md = `# 🟢 The Wall of Fame: Chrome's Most Privacy-Respecting Extensions\n\n`;
-  md += `*Scanned March 2026 by [Zovo Permissions Scanner](https://scan.zovo.dev)*\n\n`;
+  md += `*Scanned March 2026 by [Zovo Permissions Scanner](https://scan.zovo.one)*\n\n`;
   md += `These popular extensions prove you don't need invasive permissions to build a great product.\n\n`;
   md += `| Rank | Extension | Score | Grade | Why It's Good |\n`;
   md += `|------|-----------|-------|-------|---------------|\n`;
@@ -166,7 +166,7 @@ function generateStatistics(results: ScanResult[], failures: FailedScan[]): stri
     .slice(0, 5);
 
   let md = `# State of Chrome Extension Privacy — March 2026\n\n`;
-  md += `*Analysis of ${total} popular Chrome extensions by [Zovo Permissions Scanner](https://scan.zovo.dev)*\n\n`;
+  md += `*Analysis of ${total} popular Chrome extensions by [Zovo Permissions Scanner](https://scan.zovo.one)*\n\n`;
 
   md += `## Key Findings\n\n`;
   md += `- **Average privacy score: ${avgScore}/100** across ${total} popular extensions\n`;
