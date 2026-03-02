@@ -57,23 +57,23 @@ describe('calculateScore', () => {
     expect(result.grade).toBe('A+');
   });
 
-  it('scores moderate extension 70-85 (Grade B)', () => {
+  it('scores moderate extension 78-90 (Grade A or B)', () => {
     const manifest = moderate as ChromeManifest;
     const parsed = parseManifest(manifest);
     const result = calculateScore(parsed, manifest);
 
-    expect(result.score).toBeGreaterThanOrEqual(70);
-    expect(result.score).toBeLessThanOrEqual(85);
-    expect(result.grade).toBe('B');
+    expect(result.score).toBeGreaterThanOrEqual(78);
+    expect(result.score).toBeLessThanOrEqual(90);
+    expect(['A', 'B']).toContain(result.grade);
   });
 
-  it('scores dangerous extension ≤ 30 (Grade F)', () => {
+  it('scores dangerous extension ≤ 50 (Grade C or D)', () => {
     const manifest = dangerous as ChromeManifest;
     const parsed = parseManifest(manifest);
     const result = calculateScore(parsed, manifest);
 
-    expect(result.score).toBeLessThanOrEqual(30);
-    expect(['F', 'D']).toContain(result.grade);
+    expect(result.score).toBeLessThanOrEqual(50);
+    expect(['C', 'D']).toContain(result.grade);
   });
 
   it('scores optimal/best-practices extension ≥ 90 (Grade A+)', () => {
@@ -112,7 +112,7 @@ describe('calculateScore', () => {
 
     const comboRisk = result.risks.find((r) => r.permission.includes('+'));
     expect(comboRisk).toBeDefined();
-    expect(result.score).toBeLessThan(60);
+    expect(result.score).toBeLessThan(75);
   });
 
   it('detects combo penalties for webRequest + webRequestBlocking', () => {
@@ -189,7 +189,7 @@ describe('calculateScore', () => {
       r.permission.includes('wildcard subdomain')
     );
     expect(wildcardRisk).toBeDefined();
-    expect(result.score).toBeLessThan(95);
+    expect(result.score).toBeLessThan(100);
   });
 
   it('penalizes many specific host domains', () => {
@@ -210,6 +210,104 @@ describe('calculateScore', () => {
     const result = calculateScore(parsed, manifest);
 
     expect(result.score).toBeLessThan(95);
+  });
+
+  // ── Credibility tests: legitimate tools should not score F ──
+
+  it('scores a uBlock Origin-like ad blocker above F (diminishing returns)', () => {
+    // uBlock Origin needs webRequest, webRequestBlocking, tabs, <all_urls>, etc.
+    // for legitimate ad blocking — it should NOT get 0/F
+    const manifest: ChromeManifest = {
+      manifest_version: 2,
+      name: 'uBlock Origin',
+      version: '1.50.0',
+      permissions: [
+        'storage',
+        'tabs',
+        'webNavigation',
+        'webRequest',
+        'webRequestBlocking',
+        'unlimitedStorage',
+        '<all_urls>',
+      ],
+      homepage_url: 'https://github.com/gorhill/uBlock',
+    };
+    const parsed = parseManifest(manifest);
+    const result = calculateScore(parsed, manifest);
+
+    // Should score in D range (30-49), NOT F (0-29)
+    expect(result.score).toBeGreaterThanOrEqual(30);
+    expect(result.grade).not.toBe('F');
+  });
+
+  it('scores a Bitwarden-like password manager above F (diminishing returns)', () => {
+    // Password managers need cookies, tabs, nativeMessaging, <all_urls>, etc.
+    const manifest: ChromeManifest = {
+      manifest_version: 3,
+      name: 'Bitwarden',
+      version: '2024.1.0',
+      permissions: [
+        'storage',
+        'tabs',
+        'clipboardRead',
+        'clipboardWrite',
+        'nativeMessaging',
+        'unlimitedStorage',
+        'activeTab',
+        'scripting',
+        'offscreen',
+        'contextMenus',
+        'alarms',
+        'idle',
+      ],
+      host_permissions: ['<all_urls>'],
+      optional_permissions: ['notifications'],
+      homepage_url: 'https://github.com/bitwarden/clients',
+    };
+    const parsed = parseManifest(manifest);
+    const result = calculateScore(parsed, manifest);
+
+    // Should score in D or C range, NOT F
+    expect(result.score).toBeGreaterThanOrEqual(30);
+    expect(result.grade).not.toBe('F');
+  });
+
+  it('still gives F to an extension requesting every dangerous permission', () => {
+    // An extension with ALL critical + high permissions and no bonuses
+    // should still get F — the diminishing returns should not save it
+    const manifest: ChromeManifest = {
+      manifest_version: 3,
+      name: 'Mega Spy Tool',
+      version: '1.0.0',
+      permissions: [
+        'debugger',
+        'nativeMessaging',
+        'proxy',
+        'vpnProvider',
+        'content_settings',
+        'cookies',
+        'history',
+        'bookmarks',
+        'downloads',
+        'management',
+        'privacy',
+        'webRequest',
+        'webRequestBlocking',
+        'tabs',
+        'scripting',
+        'notifications',
+        'webNavigation',
+        'clipboardRead',
+        'geolocation',
+      ],
+      host_permissions: ['<all_urls>'],
+      content_scripts: [{ matches: ['<all_urls>'], js: ['inject.js'] }],
+    };
+    const parsed = parseManifest(manifest);
+    const result = calculateScore(parsed, manifest);
+
+    expect(result.grade).toBe('F');
+    expect(result.score).toBeLessThan(30);
   });
 
   it('clamps final score between 0 and 100', () => {

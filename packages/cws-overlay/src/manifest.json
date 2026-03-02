@@ -8,7 +8,8 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://chromewebstore.google.com/*"
+    "https://chromewebstore.google.com/*",
+    "https://api.zovo.one/*"
   ],
   "content_scripts": [
     {

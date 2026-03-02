@@ -3,9 +3,9 @@ import { PermissionEntry, ComboRule, Severity } from './types';
 // ── Risk Weights by Severity ──
 
 export const RISK_WEIGHTS: Record<Severity, number> = {
-  critical: 25,
-  high: 15,
-  medium: 8,
+  critical: 15,
+  high: 10,
+  medium: 6,
   low: 2,
 };
 
@@ -296,32 +296,32 @@ export function getAllPermissionEntries(): PermissionEntry[] {
 export const COMBO_RULES: ComboRule[] = [
   {
     permissions: ['tabs', '<all_urls>'],
-    extraPenalty: 15,
+    extraPenalty: 10,
     reason: 'Tabs + all_urls enables full browsing surveillance',
   },
   {
     permissions: ['tabs', '*://*/*'],
-    extraPenalty: 15,
+    extraPenalty: 10,
     reason: 'Tabs + wildcard hosts enables full browsing surveillance',
   },
   {
     permissions: ['webRequest', 'webRequestBlocking'],
-    extraPenalty: 15,
+    extraPenalty: 10,
     reason: 'Can intercept and modify ALL network requests',
   },
   {
     permissions: ['cookies', '<all_urls>'],
-    extraPenalty: 15,
+    extraPenalty: 10,
     reason: 'Can steal cookies from any website — session hijacking risk',
   },
   {
     permissions: ['cookies', '*://*/*'],
-    extraPenalty: 15,
+    extraPenalty: 10,
     reason: 'Can steal cookies from any website — session hijacking risk',
   },
   {
     permissions: ['management'],
-    extraPenalty: 10,
+    extraPenalty: 7,
     reason: 'Extension management combined with other high-risk permissions — can weaponize other extensions',
     // This rule is special: it fires when management is paired with any other high-risk perm
   },

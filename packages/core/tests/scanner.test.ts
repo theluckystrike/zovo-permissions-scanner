@@ -87,17 +87,17 @@ describe('scanManifest', () => {
     expect(report.score).toBeGreaterThanOrEqual(95);
   });
 
-  it('moderate fixture → Grade B (score 70-85)', () => {
+  it('moderate fixture → Grade A or B (score 78-90)', () => {
     const report = scanManifest(moderate as ChromeManifest);
-    expect(report.score).toBeGreaterThanOrEqual(70);
-    expect(report.score).toBeLessThanOrEqual(85);
-    expect(report.grade).toBe('B');
+    expect(report.score).toBeGreaterThanOrEqual(78);
+    expect(report.score).toBeLessThanOrEqual(90);
+    expect(['A', 'B']).toContain(report.grade);
   });
 
-  it('dangerous fixture → Grade D or F (score ≤ 30)', () => {
+  it('dangerous fixture → Grade C or D (score ≤ 50)', () => {
     const report = scanManifest(dangerous as ChromeManifest);
-    expect(report.score).toBeLessThanOrEqual(30);
-    expect(['D', 'F']).toContain(report.grade);
+    expect(report.score).toBeLessThanOrEqual(50);
+    expect(['C', 'D']).toContain(report.grade);
   });
 
   it('optimal fixture → Grade A+ (score ≥ 90)', () => {

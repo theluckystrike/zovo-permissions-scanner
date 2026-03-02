@@ -19,4 +19,4 @@ export type {
 export { parseManifest, validateManifest } from './manifest-parser';
 export { calculateScore, getGradeInfo } from './scoring';
 export { getPermissionEntry, getAllPermissionEntries } from './permissions-db';
-export { extractManifestFromCrx, downloadCrx } from './crx-extractor';
+export { extractManifestFromCrx, downloadCrx, resolveI18nMessages } from './crx-extractor';

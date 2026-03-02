@@ -3,7 +3,7 @@
  *
  * Handles cross-origin API calls on behalf of the content script.
  * Content scripts on chromewebstore.google.com cannot make requests to
- * api.scan.zovo.dev directly, so they send a message here and the
+ * api.zovo.one directly, so they send a message here and the
  * service worker performs the fetch.
  *
  * Message protocol:
@@ -26,7 +26,7 @@ interface ScanReport {
   scanned_at: string;
 }
 
-const API_BASE = 'https://api.scan.zovo.dev';
+const API_BASE = 'https://api.zovo.one';
 
 /**
  * Listen for messages from the content script.

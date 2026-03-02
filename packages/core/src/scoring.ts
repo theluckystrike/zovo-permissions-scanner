@@ -52,7 +52,24 @@ export interface ScoreResult {
   bonuses: Bonus[];
 }
 
-const MAX_BONUS = 15;
+const MAX_BONUS = 20;
+
+/**
+ * Diminishing returns factor for high/critical permissions.
+ * Each successive permission at the same severity level costs
+ * (DIMINISHING_FACTOR ^ n) of the base weight, where n is the
+ * 0-based index within that severity tier.
+ *
+ * This prevents legitimate extensions that need several high-risk
+ * permissions (e.g. ad blockers, password managers) from being
+ * unfairly hammered to 0.
+ */
+const DIMINISHING_FACTOR = 0.5;
+const DIMINISHING_FACTOR_MEDIUM = 0.7;
+const DIMINISHING_SEVERITIES: Set<string> = new Set(['high', 'critical', 'medium']);
+
+/** Maximum total penalty from combo rules */
+const MAX_COMBO_PENALTY = 15;
 
 export function calculateScore(
   parsed: ParsedPermissions,
@@ -62,14 +79,28 @@ export function calculateScore(
   const risks: Risk[] = [];
   const bonuses: Bonus[] = [];
 
-  // ── 1. Individual permission penalties ──
+  // ── 1. Individual permission penalties (with diminishing returns) ──
 
   const scoredPerms = getAllScoredPermissions(parsed);
+
+  // Track how many permissions we've seen per severity for diminishing returns
+  const severityCounts: Record<string, number> = {};
 
   for (const perm of scoredPerms) {
     const entry = getPermissionEntry(perm);
     if (entry) {
-      const weight = RISK_WEIGHTS[entry.severity];
+      const baseWeight = RISK_WEIGHTS[entry.severity];
+      let weight: number;
+
+      if (DIMINISHING_SEVERITIES.has(entry.severity)) {
+        const count = severityCounts[entry.severity] ?? 0;
+        const factor = entry.severity === 'medium' ? DIMINISHING_FACTOR_MEDIUM : DIMINISHING_FACTOR;
+        weight = baseWeight * Math.pow(factor, count);
+        severityCounts[entry.severity] = count + 1;
+      } else {
+        weight = baseWeight;
+      }
+
       score -= weight;
       risks.push({
         permission: perm,
@@ -88,8 +119,13 @@ export function calculateScore(
   ];
   const triggeredCombos = getTriggeredCombos(allPermsForCombos);
 
+  let comboTotal = 0;
   for (const combo of triggeredCombos) {
-    score -= combo.extraPenalty;
+    const effectivePenalty = Math.min(combo.extraPenalty, MAX_COMBO_PENALTY - comboTotal);
+    if (effectivePenalty > 0) {
+      score -= effectivePenalty;
+      comboTotal += effectivePenalty;
+    }
     risks.push({
       permission: combo.permissions.join(' + '),
       severity: 'critical',
@@ -127,11 +163,11 @@ export function calculateScore(
 
   // Wildcard subdomain penalties
   if (hostStats.wildcardSubdomains > 0) {
-    const penalty = hostStats.wildcardSubdomains * 5;
+    const penalty = hostStats.wildcardSubdomains * 2;
     score -= penalty;
     risks.push({
       permission: `${hostStats.wildcardSubdomains} wildcard subdomain pattern(s)`,
-      severity: 'medium',
+      severity: 'low',
       reason: `Uses wildcard subdomain matching (*.domain) for ${hostStats.wildcardSubdomains} domain(s)`,
       recommendation: 'Specify exact subdomains when possible',
     });
@@ -143,16 +179,16 @@ export function calculateScore(
   );
   const csWildcards = csHosts.filter((m) => m.includes('*.')).length;
   if (csWildcards > 0) {
-    score -= csWildcards * 5;
+    score -= csWildcards * 2;
     risks.push({
       permission: `${csWildcards} content script wildcard pattern(s)`,
-      severity: 'medium',
+      severity: 'low',
       reason: `Content scripts inject into ${csWildcards} wildcard subdomain pattern(s)`,
       recommendation: 'Limit content script injection to specific domains',
     });
   }
 
-  // ── 4. Bonuses (capped at +15) ──
+  // ── 4. Bonuses (capped at +20) ──
 
   let bonusTotal = 0;
 

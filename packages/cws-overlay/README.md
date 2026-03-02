@@ -77,7 +77,7 @@ Runs on `chromewebstore.google.com/detail/*` pages. Parses the extension ID from
 
 ### Background Service Worker
 
-Handles cross-origin API requests to `api.scan.zovo.dev`. Content scripts cannot make requests to external origins, so they send a `SCAN_EXTENSION` message to the service worker, which performs the fetch and returns the result.
+Handles cross-origin API requests to `api.zovo.one`. Content scripts cannot make requests to external origins, so they send a `SCAN_EXTENSION` message to the service worker, which performs the fetch and returns the result.
 
 ### Shadow DOM Isolation
 

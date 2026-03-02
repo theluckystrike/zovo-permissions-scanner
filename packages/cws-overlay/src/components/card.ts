@@ -153,7 +153,7 @@ export function createCard(report: ScanReport, onCollapse: () => void): HTMLElem
   // ── Full Report link ──
   const link = document.createElement('a');
   link.className = 'zovo-card-link';
-  link.href = `https://scan.zovo.dev/report/${report.extension_id}`;
+  link.href = `https://zovo.one/report/${report.extension_id}`;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = 'Full Report \u2192';
