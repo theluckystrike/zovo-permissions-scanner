@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        package:
+          - core
+          - api
+          - bulk-scanner
+          - cli
+          - cws-overlay
+          - github-action
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        working-directory: packages/${{ matrix.package }}
+        run: npm ci
+      
+      - name: Lint
+        working-directory: packages/${{ matrix.package }}
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Build
+        working-directory: packages/${{ matrix.package }}
+        run: npm run build
+        continue-on-error: true
+      
+      - name: Test
+        working-directory: packages/${{ matrix.package }}
+        run: npm run test
+        continue-on-error: true
