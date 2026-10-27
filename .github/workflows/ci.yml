@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 15
     
     strategy:
+      fail-fast: false
+      max-parallel: 2
       matrix:
         package:
           - core
@@ -32,21 +34,28 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Install core dependency
+        if: matrix.package != 'core' && matrix.package != 'cws-overlay'
+        working-directory: packages/core
+        run: npm ci
+
+      - name: Build core dependency
+        if: matrix.package != 'core' && matrix.package != 'cws-overlay'
+        working-directory: packages/core
+        run: npm run build
+
       - name: Install dependencies
         working-directory: packages/${{ matrix.package }}
-        run: npm install
+        run: npm ci
       
       - name: Lint
         working-directory: packages/${{ matrix.package }}
-        run: npm run lint
-        continue-on-error: true
+        run: npm run lint --if-present
       
       - name: Build
         working-directory: packages/${{ matrix.package }}
         run: npm run build
-        continue-on-error: true
       
       - name: Test
         working-directory: packages/${{ matrix.package }}
-        run: npm run test
-        continue-on-error: true
+        run: npm run test --if-present
