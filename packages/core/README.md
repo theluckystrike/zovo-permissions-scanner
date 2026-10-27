@@ -1,20 +1,33 @@
 # @zovo/permissions-scanner
 
-Chrome extension permissions scanner — privacy/security grading engine.
+Chrome extension manifest permissions scanner.
 
-**Know what your extensions can see.**
+Read manifest permissions and produce risk flags and a letter grade. The score is a permission-based heuristic, not proof that an extension is safe.
 
-Analyzes any Chrome extension's permissions and generates a privacy/security report with a letter grade (A+ to F).
+## Build from source
 
-## Installation
+On 27 October 2026, the public npm registry returned 404 for `@zovo/permissions-scanner`. Use this repository's source package instead of the unavailable public npm install command.
+
+Use Node.js 20 or later. From the repository root, run these commands.
 
 ```bash
-npm install @zovo/permissions-scanner
+npm ci --prefix packages/core
+npm run build --prefix packages/core
+npm test --prefix packages/core
 ```
+
+For another local Node.js project, build the core first and install its local directory. Replace the path with the location of your checkout.
+
+```bash
+npm install /absolute/path/to/zovo-permissions-scanner/packages/core
+```
+
+The built package still has the module name `@zovo/permissions-scanner`, so the imports below apply after that local installation. To get the repository, follow the [root source instructions](../../README.md#build-the-core-and-cli-from-source).
 
 ## Usage
 
 ```typescript
+import * as fs from 'node:fs';
 import { scan, scanFromCrx, scanManifest } from '@zovo/permissions-scanner';
 
 // Scan by Chrome Web Store extension ID
@@ -36,7 +49,7 @@ const buffer = fs.readFileSync('extension.crx');
 const report = await scanFromCrx(buffer);
 ```
 
-## Output Format
+## Output format
 
 ```json
 {
@@ -73,16 +86,16 @@ const report = await scanFromCrx(buffer);
 }
 ```
 
-## Grading Scale
+## Grading scale
 
 | Score | Grade | Label | Color |
 |-------|-------|-------|-------|
-| 90-100 | A+ | Fort Knox | 🟢 Green |
-| 80-89 | A | Solid | 🟢 Light Green |
-| 70-79 | B | Mostly Harmless | 🟡 Yellow |
-| 50-69 | C | Eyebrow Raiser | 🟠 Orange |
-| 30-49 | D | Red Flags | 🔴 Red |
-| 0-29 | F | Run. | ⚫ Black |
+| 90-100 | A+ | Fort Knox | Green |
+| 80-89 | A | Solid | Light green |
+| 70-79 | B | Mostly Harmless | Yellow |
+| 50-69 | C | Eyebrow Raiser | Orange |
+| 30-49 | D | Red Flags | Red |
+| 0-29 | F | Run. | Black |
 
 ## API
 
@@ -108,4 +121,4 @@ interface ScanOptions {
 
 ## License
 
-MIT — [Zovo](https://zovo.one)
+MIT. See the [repository license](../../LICENSE).

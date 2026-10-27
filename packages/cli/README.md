@@ -1,105 +1,66 @@
 # @zovo/scan
 
-CLI for the Zovo Permissions Scanner. Analyze Chrome extension permissions, identify risks, and get a security grade — all from your terminal.
+CLI source for reading Chrome extension manifest permissions and reporting risk flags and a grade. A permission score is not proof that an extension is safe.
 
-## Installation
+## Build from source
 
-```bash
-npm install -g @zovo/scan
-```
+On 27 October 2026, the public npm registry returned 404 for `@zovo/scan` and its core package. The commands below use the local dependency in this repository. They do not require a published npm package or a global installation.
 
-## Usage
-
-### Scan by extension ID
-
-Pass a Chrome Web Store extension ID to fetch and scan its manifest:
+Use Node.js 20 or later. From the repository root, build the core before the CLI.
 
 ```bash
-zovo-scan <extension-id>
+npm ci --prefix packages/core
+npm run build --prefix packages/core
+npm ci --prefix packages/cli
+npm run build --prefix packages/cli
+node packages/cli/dist/index.js --help
 ```
+
+To get the repository first, follow the [root source instructions](../../README.md#build-the-core-and-cli-from-source).
+
+## Scan a target
+
+A target is a local `.json` manifest file, a local `.crx` file or a Chrome Web Store extension ID.
 
 ```bash
-zovo-scan nkbihfbeogaeaoehlefnkodbefgpgknn
+node packages/cli/dist/index.js /path/to/manifest.json
+node packages/cli/dist/index.js /path/to/extension.crx
+node packages/cli/dist/index.js nkbihfbeogaeaoehlefnkodbefgpgknn
 ```
 
-### Scan a local manifest.json
+Local manifest scans do not download an extension. Extension-ID scans use network access to download the CRX. Pass the manifest file when scanning an unpacked directory.
 
-Point the scanner at a local `manifest.json` file:
+## JSON output
 
 ```bash
-zovo-scan manifest.json
+node packages/cli/dist/index.js /path/to/manifest.json --json
 ```
 
-### Scan a .crx file
+The JSON contains the name, version, score, grade, permissions, risks and scan timestamp. The CLI does not create a hosted report URL or upload this local manifest scan.
 
-Provide a path to a packaged `.crx` extension:
+## Compare two targets
+
+Use the `compare` subcommand with exactly two targets.
 
 ```bash
-zovo-scan extension.crx
+node packages/cli/dist/index.js compare first-manifest.json second-manifest.json --json
 ```
 
-### JSON output
-
-Add `--json` to get machine-readable JSON instead of the pretty terminal output:
+Or use the single-target command with one comparison target.
 
 ```bash
-zovo-scan <extension-id> --json
+node packages/cli/dist/index.js first-manifest.json --compare second-manifest.json --json
 ```
 
-### Compare multiple extensions
+A variadic `--compare <id-1> <id-2> <id-3>` invocation is not supported. The CLI also has no `--extension-id`, `--crx` or `--directory` options.
 
-Use `--compare` to scan several extensions side by side:
+## Check the build
 
 ```bash
-zovo-scan --compare <id-1> <id-2> <id-3>
+npm run build --prefix packages/cli
+npm test --prefix packages/core
 ```
-
-Combine with `--json` for structured comparison data:
-
-```bash
-zovo-scan --compare <id-1> <id-2> --json
-```
-
-## Example Output
-
-```
-╔══════════════════════════════════════════════════════════╗
-║  Zovo Permissions Scanner                                ║
-╚══════════════════════════════════════════════════════════╝
-
-  Extension:  Tab Manager Pro v2.1.0
-  Score:      42/100
-  Grade:      D — Red Flags 🔴
-
-  ⚠️  RISKS FOUND:
-
-  🔴 CRITICAL: Requests access to ALL websites (<all_urls>)
-     → Consider limiting to specific domains your extension needs
-
-  🔴 HIGH: Can intercept and modify network requests (webRequest + webRequestBlocking)
-     → Use declarativeNetRequest (MV3) for safer rule-based blocking
-
-  🟡 MEDIUM: Can read all open tab URLs and titles (tabs)
-     → Use activeTab if you only need the current tab on click
-
-  ✅ GOOD: Uses optional_permissions for history (+3 points)
-  ✅ GOOD: Has privacy policy URL (+3 points)
-
-  Full report: https://scan.zovo.one/report/abc123def456
-
-  ──────────────────────────────────────────────────────
-  Scanned by Zovo · https://zovo.one
-```
-
-## Web Scanner
-
-For a browser-based experience, visit [scan.zovo.one](https://scan.zovo.one).
-
-## Links
-
-- **Web Scanner**: [scan.zovo.one](https://scan.zovo.one)
-- **Zovo**: [zovo.one](https://zovo.one)
 
 ## License
 
-MIT
+MIT. See the [repository license](../../LICENSE).
